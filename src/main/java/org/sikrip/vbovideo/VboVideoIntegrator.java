@@ -22,7 +22,7 @@ public class VboVideoIntegrator {
 		MP4, AVI
 	}
 
-	public void integrate(String vboFilePath, String videoFilePath, VideoType videoType, String sessionName, int dataCaptureInterval, int videoOffset)
+	public static void integrate(String vboFilePath, String videoFilePath, VideoType videoType, String sessionName, int dataCaptureInterval, int videoOffset)
 			throws IOException {
 		Map<String, List<String>> vboSections = readVboSections(vboFilePath);
 
@@ -51,7 +51,7 @@ public class VboVideoIntegrator {
 		final List<String> dataLines = vboSections.get("[data]");
 		for (int i = 0; i < dataLines.size(); i++) {
 			final String initialData = dataLines.get(i);
-			final String finalData = String.format(initialData + dataSeparator + "0001" + dataSeparator + "%8d", (videoOffset + i * dataCaptureInterval));
+			final String finalData = String.format(initialData + dataSeparator + "0001" + dataSeparator + "%1$08d", (videoOffset + i * dataCaptureInterval));
 			dataLines.set(i, finalData);
 		}
 

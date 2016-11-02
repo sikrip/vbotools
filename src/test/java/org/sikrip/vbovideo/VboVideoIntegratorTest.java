@@ -10,10 +10,17 @@ import org.junit.Test;
 public class VboVideoIntegratorTest {
 
 	@Test
+	public void verifyIntegration() throws IOException {
+		VboVideoIntegrator
+				.integrate(getTestResourceUrl("/sample.vbo").getPath(), "path/to/my/video", VboVideoIntegrator.VideoType.MP4, "session-name", 200, 2000);
+		// TODO verify
+	}
+
+	@Test
 	public void verifyVboHeadersReading() throws IOException {
 		Map<String, List<String>> vboSections = VboVideoIntegrator.readVboSections(getTestResourceUrl("/sample.vbo").getPath());
 
-		System.out.println(vboSections);
+		// TODO verify
 	}
 
 	public static URL getTestResourceUrl(String filename) {

@@ -25,6 +25,8 @@ Track name: Megara
 Driver name: sikrip
 Scope: Traveled route
 
+[column names]
+satellites time latitude longitude velocity heading height
 [data]
 009 073622.00 +02279.16590 -01401.66780 000.00 152.37 +0003.09
 009 073623.00 +02279.16590 -01401.66780 000.00 152.37 +0003.21
