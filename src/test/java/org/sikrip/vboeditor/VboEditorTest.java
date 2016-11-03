@@ -1,8 +1,9 @@
-package org.sikrip.vbovideo;
+package org.sikrip.vboeditor;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -13,11 +14,24 @@ import org.junit.Test;
 public class VboEditorTest {
 
 	@Test
+	public void verifyVideoFileCreation() throws IOException {
+		final String basePath = getTestResourceUrl("/").getPath();
+
+		VboEditor.createVideoFile(basePath, "sample.avi", "my-session");
+
+		final File sourceVideo = new File(basePath + "/sample.avi");
+		final File finalVideo = new File(basePath + "/my-session/my-session0001.avi");
+
+		assertTrue(finalVideo.exists());
+		assertEquals(sourceVideo.length(), finalVideo.length());
+	}
+
+	@Test
 	public void verifyVideoMetadataIntegration() throws IOException {
 
-		VboEditor.addVideoMetadata(getTestResourceUrl("/").getPath(), "sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 200, 2000);
+		VboEditor.createVboWithVideoMetadata(getTestResourceUrl("/").getPath(), "sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 200, 2000);
 
-		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(getTestResourceUrl("/my-session/my-session_data.vbo").getPath());
+		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(getTestResourceUrl("/my-session/my-sessionData.vbo").getPath());
 
 		List<String> headers = vboWithVideoSections.get("[header]");
 		assertTrue(headers.contains("avifileindex"));

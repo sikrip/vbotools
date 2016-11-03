@@ -1,4 +1,4 @@
-package org.sikrip.vbovideo;
+package org.sikrip.vboeditor;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -14,19 +14,47 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
 public class VboEditor {
 
+	public static final String VIDEO_FILE_SUFFIX = "0001";
+
 	private final static String[] DATA_SEPARATORS = { " ", ",", "\t" };
+	public static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
 
 	public enum VideoType {
 		MP4, AVI
 	}
 
 	/**
+	 * Creates a video file that can be used for video/data analysis on Circuit Tools.
+	 *
+	 * @param basePath
+	 * 		the path of the working directory
+	 * @param videoFileName
+	 * 		theame of the original file na
+	 * @param sessionName
+	 * 		the name of the session
+	 */
+	public static void createVideoFile(String basePath, String videoFileName, String sessionName) throws IOException {
+		if (createOutputDirectory(basePath + "/" + sessionName)) {
+			final String videoExtension = videoFileName.substring(videoFileName.lastIndexOf('.'));
+			final File sourceVideo = new File(basePath + "/" + videoFileName);
+			final File finalVideo = new File(basePath + "/" + sessionName + "/" + sessionName + VIDEO_FILE_SUFFIX + videoExtension);
+			FileUtils.copyFile(sourceVideo, finalVideo);
+		} else {
+			throw new RuntimeException("Could not create output directory");
+		}
+	}
+
+	/**
 	 * Creates a new vbo file with video metadata.
+	 *
+	 * <p>New vbo file is created under {basePath}/{sessionName}/{sessionName}_data.vbo</p>
 	 *
 	 * @param basePath
 	 * 		the path of the working directory
@@ -42,7 +70,8 @@ public class VboEditor {
 	 * 		the offset of the video start time relative to the vbo file
 	 * @throws IOException
 	 */
-	public static void addVideoMetadata(String basePath, String vboFileName, VideoType videoType, String sessionName, int videoSynchInterval, int videoOffset)
+	public static void createVboWithVideoMetadata(String basePath, String vboFileName, VideoType videoType, String sessionName, int videoSynchInterval,
+			int videoOffset)
 			throws IOException {
 		Map<String, List<String>> vboSections = readVboSections(basePath + vboFileName);
 
@@ -71,13 +100,14 @@ public class VboEditor {
 		final List<String> dataLines = vboSections.get("[data]");
 		for (int i = 0; i < dataLines.size(); i++) {
 			final String initialData = dataLines.get(i);
-			final String finalData = String.format(initialData + dataSeparator + "0001" + dataSeparator + "%1$08d", (videoOffset + i * videoSynchInterval));
+			final String finalData = String
+					.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", (videoOffset + i * videoSynchInterval));
 			dataLines.set(i, finalData);
 		}
 
 		// Create the final vbo file
 		if (createOutputDirectory(basePath + "/" + sessionName)) {
-			try (final BufferedWriter writer = new BufferedWriter(new FileWriter(basePath + "/" + sessionName + "/" + sessionName + "_data.vbo"))) {
+			try (final BufferedWriter writer = new BufferedWriter(new FileWriter(basePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
 				writer.write(String.format("File created on %s using VBO Editor\n\n", new Date()));
 
 				writeSection(vboSections, writer, "[header]");
