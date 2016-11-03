@@ -66,8 +66,6 @@ public class VboEditor {
 	 * 		the type of the video (AVI or MP4)
 	 * @param sessionName
 	 * 		the name of the session (used to name the final vbo file)
-	 * @param gpsDataInterval
-	 * 		the interval in which the GPS data are captured
 	 * @param gpsDataOffset
 	 * 		the offset of the gps data start time relative to the video
 	 * 		(positive values indicate that GPS data start AFTER the video,
@@ -75,7 +73,7 @@ public class VboEditor {
 	 * @throws IOException
 	 */
 	public static void createVboWithVideoMetadata(String outputDirBasePath, String originalVboPath,
-			VideoType videoType, String sessionName, int gpsDataInterval, int gpsDataOffset)
+			VideoType videoType, String sessionName, int gpsDataOffset)
 			throws IOException {
 
 		final Map<String, List<String>> vboSections = readVboSections(originalVboPath);
@@ -102,6 +100,7 @@ public class VboEditor {
 
 		// add video metadata
 		final List<String> dataLines = vboSections.get("[data]");
+		final int gpsDataInterval = findGpsDataInterval(vboSections, dataSeparator);
 		for (int i = 0; i < dataLines.size(); i++) {
 			final String initialData = dataLines.get(i);
 			final String finalData;
@@ -135,6 +134,52 @@ public class VboEditor {
 		} else {
 			throw new RuntimeException("Cannot create output directory");
 		}
+	}
+
+	static int findGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
+
+		final int numberOfSamples = 10;
+
+		// skip soma entries at the start of the data because sush entries do not contain stable time info
+		final int entriesToSkip = 10;
+
+		if (vboFileSections.get("[data]").size() < entriesToSkip + numberOfSamples) {
+			throw new RuntimeException("Data sample to small");
+		}
+
+		final int timeColumnIdx = vboFileSections.get("[header]").indexOf("time");
+
+		Double time = null;
+		Double sumOfIntervals = 0.0;
+		for (int i = entriesToSkip; i < entriesToSkip + numberOfSamples; i++) {
+			Double currentTime = Double.valueOf(vboFileSections.get("[data]").get(i).split(dataSeparator)[timeColumnIdx]);
+
+			if (time != null) {
+				sumOfIntervals += currentTime - time;
+			}
+			time = currentTime;
+		}
+
+		// convert to millis
+		Double intervalMillis = 1000 * (sumOfIntervals / (numberOfSamples - 1));
+
+		int intervals[] = { 1000/*1hz*/, 200/*5hz*/, 100/*10hz*/, 50/*20hz*/ };
+
+		int diffsPerInterval[] = { Math.abs(1000 - intervalMillis.intValue()),
+				Math.abs(200 - intervalMillis.intValue()),
+				Math.abs(100 - intervalMillis.intValue()),
+				Math.abs(50 - intervalMillis.intValue()) };
+
+		int minDiff = diffsPerInterval[0];
+		int minDiffIdx = 0;
+		for (int i = 1; i < diffsPerInterval.length; i++) {
+			if (diffsPerInterval[i] < minDiff) {
+				minDiff = diffsPerInterval[i];
+				minDiffIdx = i;
+			}
+		}
+
+		return intervals[minDiffIdx];
 	}
 
 	static Map<String, List<String>> readVboSections(String vboFilePath) throws IOException {

@@ -14,6 +14,12 @@ import org.junit.Test;
 public class VboEditorTest {
 
 	@Test
+	public void verifyDataIntervalIdentification() throws IOException {
+		assertEquals(100, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample-vbo-from-dbn.vbo").getPath()), " "));
+		assertEquals(200, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath()), " "));
+	}
+
+	@Test
 	public void verifyVideoFileCreation() throws IOException {
 		final String basePath = getTestResourceUrl("/").getPath();
 
@@ -31,7 +37,7 @@ public class VboEditorTest {
 
 		final String basePath = getTestResourceUrl("/").getPath();
 
-		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 200, 2000);
+		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 2000);
 
 		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
@@ -54,7 +60,7 @@ public class VboEditorTest {
 		assertTrue(data.get(0).contains("0001"));
 		assertTrue(data.get(0).contains("00002000"));
 		assertTrue(data.get(1).contains("0001"));
-		assertTrue(data.get(1).contains("00002200"));
+		assertTrue(data.get(1).contains("00002100"));
 	}
 
 	@Test
