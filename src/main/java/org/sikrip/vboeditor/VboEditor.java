@@ -23,6 +23,8 @@ public class VboEditor {
 
 	public static final String VIDEO_FILE_SUFFIX = "0001";
 
+	public static final String NO_VIDEO_SYNCH_TIME = "-00000001";
+
 	private final static String[] DATA_SEPARATORS = { " ", ",", "\t" };
 	public static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
 
@@ -97,12 +99,16 @@ public class VboEditor {
 		vboSections.put("[avi]", Lists.newArrayList(sessionName, videoType.name()));
 
 		// add video metadata
-
 		final List<String> dataLines = vboSections.get("[data]");
 		for (int i = 0; i < dataLines.size(); i++) {
 			final String initialData = dataLines.get(i);
-			final String finalData = String
-					.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", (videoOffset + i * videoSynchInterval));
+			final String finalData;
+			if (videoOffset < 0) {
+				// TODO handle case where GPS data start before video.
+				throw new UnsupportedOperationException("Cases where GPS data start before video are not yet supported");
+			} else {
+				finalData = String.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", (videoOffset + i * videoSynchInterval));
+			}
 			dataLines.set(i, finalData);
 		}
 
