@@ -55,9 +55,9 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
 	private final JPanel actionControlsPanel = new JPanel();
 
-	private final JTextField infoField = new JTextField("Created by George Sikalias (@sikrip)");
+	private final JTextArea logText = new JTextArea();
 	private final JButton vboVideoIntegrate = new JButton("Integrate GPS and video data");
-	private final JButton clearAll = new JButton("Clear");
+	private final JButton clearAll = new JButton("Clear all");
 	private final JButton about = new JButton("About");
 
 	private void createGui() {
@@ -105,20 +105,29 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		gpsDataAndVideoPanel.add(new JLabel(" video data."));
 		gpsDataAndVideoPanel.add(resetOffset);
 
-		actionControlsPanel.setLayout(new BoxLayout(actionControlsPanel, BoxLayout.LINE_AXIS));
+		actionControlsPanel.setLayout(new BorderLayout());
 		actionControlsPanel.setBorder(BorderFactory.createEtchedBorder());
-		actionControlsPanel.add(infoField);
-		infoField.setEditable(false);
-		actionControlsPanel.add(vboVideoIntegrate);
-		actionControlsPanel.add(clearAll);
-		actionControlsPanel.add(about);
 
-		mainPanel.setPreferredSize(new Dimension(680, 270));
+		logText.setEditable(false);
+
+		JScrollPane logScroll = new JScrollPane(logText);
+		logScroll.setPreferredSize(new Dimension(600, 100));
+		logScroll.setBorder(BorderFactory.createTitledBorder("Log"));
+		actionControlsPanel.add(logScroll, BorderLayout.CENTER);
+
+		panel = new JPanel();
+		//panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
+		panel.add(vboVideoIntegrate);
+		panel.add(clearAll);
+		panel.add(about);
+		actionControlsPanel.add(panel, BorderLayout.NORTH);
+
+		mainPanel.setPreferredSize(new Dimension(680, 400));
 		mainPanel.add(inputControlsPanel, BorderLayout.NORTH);
 		mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
 		mainPanel.add(gpsDataAndVideoPanel, BorderLayout.CENTER);
 
-		setTitle("GPS and Video data integrator");
+		setTitle("GPS(vbo) and Video data integrator");
 		setContentPane(mainPanel);
 		setResizable(false);
 	}
@@ -140,6 +149,12 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
 		if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			sourceVboFilePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+
+			try {
+				appendLog("GPS refresh rate is " + VboEditor.identifyGPSRefreshRate(sourceVboFilePath.getText()) + "HZ");
+			} catch (Exception e) {
+				// ignore at this stage
+			}
 		}
 	}
 
@@ -150,7 +165,34 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
 		if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			sourceVideoFilePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+			try {
+				appendLog("Video file type is " + getVideoType());
+			} catch (Exception e) {
+				// ignore at this stage
+			}
 		}
+	}
+
+	private VboEditor.VideoType getVideoType() {
+		final String videoExtension;
+		final String videoFilePath = sourceVideoFilePath.getText();
+		try {
+			videoExtension = videoFilePath.substring(videoFilePath.lastIndexOf(".")).toLowerCase();
+		} catch (StringIndexOutOfBoundsException e) {
+			throw new IllegalStateException("Please select a valid video file");
+		}
+		final VboEditor.VideoType videoType;
+		switch (videoExtension) {
+		case ".mp4":
+			videoType = VboEditor.VideoType.MP4;
+			break;
+		case ".avi":
+			videoType = VboEditor.VideoType.AVI;
+			break;
+		default:
+			throw new RuntimeException(String.format("Video of type %s is not supported", videoExtension));
+		}
+		return videoType;
 	}
 
 	private void chooseOutputDirectory() {
@@ -183,41 +225,39 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 				throw new IllegalStateException("Please select a valid session name");
 			}
 
-			final String videoExtension;
-			try {
-				videoExtension = videoFilePath.substring(videoFilePath.lastIndexOf(".")).toLowerCase();
-			} catch (StringIndexOutOfBoundsException e) {
-				throw new IllegalStateException("Please select a valid video file");
-			}
-			// Start with positive number, indicating the GPS data start AFTER video
-			int gpsDataTotalOffsetMillis = (int) gpsDataOffsetMillis.getValue() +
-					1000 * (int) gpsDataOffsetSeconds.getValue() +
-					60 * 1000 * (int) gpsDataOffsetMinutes.getValue();
-			if (offsetType.getSelectedIndex() == 1) {
-				// GPS data starts BEFORE video
-				gpsDataTotalOffsetMillis = -gpsDataTotalOffsetMillis;
-			}
+			final VboEditor.VideoType videoType = getVideoType();
 
-			final VboEditor.VideoType videoType;
-			switch (videoExtension) {
-			case ".mp4":
-				videoType = VboEditor.VideoType.MP4;
-				break;
-			case ".avi":
-				videoType = VboEditor.VideoType.AVI;
-				break;
-			default:
-				throw new RuntimeException(String.format("Video of type %s is not supported", videoExtension));
-			}
+			final int gpsDataTotalOffsetMillis = getGpsDataTotalOffset();
 
 			VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, gpsDataTotalOffsetMillis);
 			VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
 
-			JOptionPane
-					.showMessageDialog(this, "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
+			appendLog("Files created under " + outputDir + "/" + sessionName);
+			appendLog("\n");
+
+			JOptionPane.showMessageDialog(this,
+					"Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Could not integrate data", JOptionPane.ERROR_MESSAGE);
 		}
+	}
+
+	private int getGpsDataTotalOffset() {
+		// Start with positive number, indicating the GPS data start AFTER video
+		int gpsDataTotalOffsetMillis = (int) gpsDataOffsetMillis.getValue() +
+				1000 * (int) gpsDataOffsetSeconds.getValue() +
+				60 * 1000 * (int) gpsDataOffsetMinutes.getValue();
+		if (offsetType.getSelectedIndex() == 1) {
+			// GPS data starts BEFORE video
+			gpsDataTotalOffsetMillis = -gpsDataTotalOffsetMillis;
+		}
+		appendLog("Total gps data offset is " + gpsDataTotalOffsetMillis + "ms");
+		return gpsDataTotalOffsetMillis;
+	}
+
+	private void appendLog(String log) {
+		logText.append(log);
+		logText.append("\n");
 	}
 
 	private void clearAll() {
@@ -226,6 +266,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		sourceVboFilePath.setText("");
 		outputDirPath.setText("");
 		sessionName.setText("");
+		logText.setText("");
 	}
 
 	private void resetOffset() {
@@ -241,7 +282,6 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 				+ "@sikrip on twitter). Enjoy!", "About this software", JOptionPane.INFORMATION_MESSAGE);
 	}
 
-
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
@@ -256,9 +296,9 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 			integrateGpsAndVideo();
 		} else if (source == resetOffset) {
 			resetOffset();
-		} else if(source==clearAll){
+		} else if (source == clearAll) {
 			clearAll();
-		} else if(source==about){
+		} else if (source == about) {
 			showAboutDialog();
 		}
 	}

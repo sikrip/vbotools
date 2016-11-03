@@ -136,6 +136,25 @@ public class VboEditor {
 		}
 	}
 
+	public static int identifyGPSRefreshRate(String vboFilePath) throws IOException {
+
+		Map<String, List<String>> vboSections = readVboSections(vboFilePath);
+		int gpsDataInterval = findGpsDataInterval(vboSections, getDataSeparator(vboSections));
+
+		switch (gpsDataInterval) {
+		case 1000:
+			return 1;
+		case 200:
+			return 5;
+		case 100:
+			return 10;
+		case 50:
+			return 20;
+		default:
+			throw new RuntimeException("Cannot identify GPS refresh rate");
+		}
+	}
+
 	static int findGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
 
 		final int numberOfSamples = 10;
