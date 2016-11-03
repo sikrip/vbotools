@@ -66,8 +66,8 @@ public class VboEditor {
 	 * 		the type of the video (AVI or MP4)
 	 * @param sessionName
 	 * 		the name of the session (used to name the final vbo file)
-	 * @param videoSynchInterval
-	 * 		the interval in ms used to synch the video with each log entry
+	 * @param gpsDataInterval
+	 * 		the interval in which the GPS data are captured
 	 * @param gpsDataOffset
 	 * 		the offset of the gps data start time relative to the video
 	 * 		(positive values indicate that GPS data start AFTER the video,
@@ -75,7 +75,7 @@ public class VboEditor {
 	 * @throws IOException
 	 */
 	public static void createVboWithVideoMetadata(String outputDirBasePath, String originalVboPath,
-			VideoType videoType, String sessionName, int videoSynchInterval, int gpsDataOffset)
+			VideoType videoType, String sessionName, int gpsDataInterval, int gpsDataOffset)
 			throws IOException {
 
 		final Map<String, List<String>> vboSections = readVboSections(originalVboPath);
@@ -109,8 +109,7 @@ public class VboEditor {
 				// TODO handle case where GPS data start before video.
 				throw new UnsupportedOperationException("Cases where GPS data start before video are not yet supported");
 			} else {
-				finalData = String.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", (gpsDataOffset + i *
-						videoSynchInterval));
+				finalData = String.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", (gpsDataOffset + i * gpsDataInterval));
 			}
 			dataLines.set(i, finalData);
 		}
