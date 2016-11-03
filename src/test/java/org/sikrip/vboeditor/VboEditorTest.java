@@ -17,7 +17,7 @@ public class VboEditorTest {
 	public void verifyVideoFileCreation() throws IOException {
 		final String basePath = getTestResourceUrl("/").getPath();
 
-		VboEditor.createVideoFile(basePath, "sample.avi", "my-session");
+		VboEditor.createVideoFile(basePath, basePath + "/sample.avi", "my-session");
 
 		final File sourceVideo = new File(basePath + "/sample.avi");
 		final File finalVideo = new File(basePath + "/my-session/my-session0001.avi");
@@ -29,9 +29,11 @@ public class VboEditorTest {
 	@Test
 	public void verifyVideoMetadataIntegration() throws IOException {
 
-		VboEditor.createVboWithVideoMetadata(getTestResourceUrl("/").getPath(), "sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 200, 2000);
+		final String basePath = getTestResourceUrl("/").getPath();
 
-		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(getTestResourceUrl("/my-session/my-sessionData.vbo").getPath());
+		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 200, 2000);
+
+		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
 		List<String> headers = vboWithVideoSections.get("[header]");
 		assertTrue(headers.contains("avifileindex"));

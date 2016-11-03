@@ -33,18 +33,18 @@ public class VboEditor {
 	/**
 	 * Creates a video file that can be used for video/data analysis on Circuit Tools.
 	 *
-	 * @param basePath
-	 * 		the path of the working directory
-	 * @param videoFileName
-	 * 		theame of the original file na
+	 * @param outputDirBasePath
+	 * 		the path of the working directory for the output files
+	 * @param originalVideoPath
+	 * 		the path of the original file video
 	 * @param sessionName
 	 * 		the name of the session
 	 */
-	public static void createVideoFile(String basePath, String videoFileName, String sessionName) throws IOException {
-		if (createOutputDirectory(basePath + "/" + sessionName)) {
-			final String videoExtension = videoFileName.substring(videoFileName.lastIndexOf('.'));
-			final File sourceVideo = new File(basePath + "/" + videoFileName);
-			final File finalVideo = new File(basePath + "/" + sessionName + "/" + sessionName + VIDEO_FILE_SUFFIX + videoExtension);
+	public static void createVideoFile(String outputDirBasePath, String originalVideoPath, String sessionName) throws IOException {
+		if (createOutputDirectory(outputDirBasePath + "/" + sessionName)) {
+			final String videoExtension = originalVideoPath.substring(originalVideoPath.lastIndexOf('.'));
+			final File sourceVideo = new File(originalVideoPath);
+			final File finalVideo = new File(outputDirBasePath + "/" + sessionName + "/" + sessionName + VIDEO_FILE_SUFFIX + videoExtension);
 			FileUtils.copyFile(sourceVideo, finalVideo);
 		} else {
 			throw new RuntimeException("Could not create output directory");
@@ -56,9 +56,9 @@ public class VboEditor {
 	 *
 	 * <p>New vbo file is created under {basePath}/{sessionName}/{sessionName}_data.vbo</p>
 	 *
-	 * @param basePath
-	 * 		the path of the working directory
-	 * @param vboFileName
+	 * @param outputDirBasePath
+	 * 		the path of the working directory for the output files
+	 * @param originalVboPath
 	 * 		the name of the original vbo file
 	 * @param videoType
 	 * 		the type of the video (AVI or MP4)
@@ -70,12 +70,13 @@ public class VboEditor {
 	 * 		the offset of the video start time relative to the vbo file
 	 * @throws IOException
 	 */
-	public static void createVboWithVideoMetadata(String basePath, String vboFileName, VideoType videoType, String sessionName, int videoSynchInterval,
-			int videoOffset)
+	public static void createVboWithVideoMetadata(String outputDirBasePath, String originalVboPath,
+			VideoType videoType, String sessionName, int videoSynchInterval, int videoOffset)
 			throws IOException {
-		Map<String, List<String>> vboSections = readVboSections(basePath + vboFileName);
 
-		List<String> headerData = vboSections.get("[header]");
+		final Map<String, List<String>> vboSections = readVboSections(originalVboPath);
+
+		final List<String> headerData = vboSections.get("[header]");
 
 		// add entries in header
 		headerData.add("avifileindex");
@@ -87,7 +88,7 @@ public class VboEditor {
 		}
 
 		// add column names
-		List<String> columnNamesSection = vboSections.get("[column names]");
+		final List<String> columnNamesSection = vboSections.get("[column names]");
 		if (columnNamesSection != null && !columnNamesSection.isEmpty()) {
 			columnNamesSection.set(0, columnNamesSection.get(0) + dataSeparator + "avifileindex" + dataSeparator + "avisynctime");
 		}
@@ -106,8 +107,9 @@ public class VboEditor {
 		}
 
 		// Create the final vbo file
-		if (createOutputDirectory(basePath + "/" + sessionName)) {
-			try (final BufferedWriter writer = new BufferedWriter(new FileWriter(basePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
+		if (createOutputDirectory(outputDirBasePath + "/" + sessionName)) {
+			try (final BufferedWriter writer = new BufferedWriter(
+					new FileWriter(outputDirBasePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
 				writer.write(String.format("File created on %s using VBO Editor\n\n", new Date()));
 
 				writeSection(vboSections, writer, "[header]");
