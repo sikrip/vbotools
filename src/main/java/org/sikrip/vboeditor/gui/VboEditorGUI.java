@@ -57,6 +57,8 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
 	private final JTextField infoField = new JTextField("Created by George Sikalias (@sikrip)");
 	private final JButton vboVideoIntegrate = new JButton("Integrate GPS and video data");
+	private final JButton clearAll = new JButton("Clear");
+	private final JButton about = new JButton("About");
 
 	private void createGui() {
 
@@ -108,6 +110,8 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		actionControlsPanel.add(infoField);
 		infoField.setEditable(false);
 		actionControlsPanel.add(vboVideoIntegrate);
+		actionControlsPanel.add(clearAll);
+		actionControlsPanel.add(about);
 
 		mainPanel.setPreferredSize(new Dimension(680, 270));
 		mainPanel.add(inputControlsPanel, BorderLayout.NORTH);
@@ -124,6 +128,8 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		sourceVideoFileChoose.addActionListener(this);
 		outputDirChoose.addActionListener(this);
 		vboVideoIntegrate.addActionListener(this);
+		clearAll.addActionListener(this);
+		about.addActionListener(this);
 		resetOffset.addActionListener(this);
 	}
 
@@ -214,11 +220,27 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		}
 	}
 
+	private void clearAll() {
+		resetOffset();
+		sourceVideoFilePath.setText("");
+		sourceVboFilePath.setText("");
+		outputDirPath.setText("");
+		sessionName.setText("");
+	}
+
 	private void resetOffset() {
 		gpsDataOffsetMillis.setValue(0);
 		gpsDataOffsetSeconds.setValue(0);
 		gpsDataOffsetMinutes.setValue(0);
 	}
+
+	private void showAboutDialog() {
+		JOptionPane.showMessageDialog(this, "Created by George Sikalias ("
+				+ "sikrip@gmail.com, "
+				+ "facebook.com/sikrip, "
+				+ "@sikrip on twitter). Enjoy!", "About this software", JOptionPane.INFORMATION_MESSAGE);
+	}
+
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -234,6 +256,10 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 			integrateGpsAndVideo();
 		} else if (source == resetOffset) {
 			resetOffset();
+		} else if(source==clearAll){
+			clearAll();
+		} else if(source==about){
+			showAboutDialog();
 		}
 	}
 
