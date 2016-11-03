@@ -124,6 +124,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		sourceVideoFileChoose.addActionListener(this);
 		outputDirChoose.addActionListener(this);
 		vboVideoIntegrate.addActionListener(this);
+		resetOffset.addActionListener(this);
 	}
 
 	private void chooseSourceVbo() {
@@ -183,12 +184,12 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 				throw new IllegalStateException("Please select a valid video file");
 			}
 			// Start with positive number, indicating the GPS data start AFTER video
-			int gpsDataOffsetMillis = (int) this.gpsDataOffsetMillis.getValue() +
+			int gpsDataTotalOffsetMillis = (int) gpsDataOffsetMillis.getValue() +
 					1000 * (int) gpsDataOffsetSeconds.getValue() +
 					60 * 1000 * (int) gpsDataOffsetMinutes.getValue();
 			if (offsetType.getSelectedIndex() == 1) {
 				// GPS data starts BEFORE video
-				gpsDataOffsetMillis = -gpsDataOffsetMillis;
+				gpsDataTotalOffsetMillis = -gpsDataTotalOffsetMillis;
 			}
 
 			final VboEditor.VideoType videoType;
@@ -203,13 +204,20 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 				throw new RuntimeException(String.format("Video of type %s is not supported", videoExtension));
 			}
 
-			VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, gpsDataOffsetMillis);
+			VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, gpsDataTotalOffsetMillis);
 			VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
 
-			JOptionPane.showMessageDialog(this, "Check " + outputDir + "/" + sessionName+" for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane
+					.showMessageDialog(this, "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Could not integrate data", JOptionPane.ERROR_MESSAGE);
 		}
+	}
+
+	private void resetOffset() {
+		gpsDataOffsetMillis.setValue(0);
+		gpsDataOffsetSeconds.setValue(0);
+		gpsDataOffsetMinutes.setValue(0);
 	}
 
 	@Override
@@ -224,6 +232,8 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 			chooseOutputDirectory();
 		} else if (source == vboVideoIntegrate) {
 			integrateGpsAndVideo();
+		} else if (source == resetOffset) {
+			resetOffset();
 		}
 	}
 
