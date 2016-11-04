@@ -69,33 +69,53 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
 		inputControlsPanel.setLayout(new BoxLayout(inputControlsPanel, BoxLayout.PAGE_AXIS));
 
+		final Icon questionIcon = UIManager.getIcon("OptionPane.questionIcon");
+
 		JPanel panel;
+		JLabel infoLabel;
 
 		panel = new JPanel();
+		infoLabel = new JLabel();
+		infoLabel.setIcon(questionIcon);
+		infoLabel.setToolTipText("Select a .vbo file that do not contain any video related data.");
 		inputControlsPanel.add(panel);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
 		panel.setBorder(BorderFactory.createTitledBorder("Source vbo file"));
+		panel.add(infoLabel);
 		panel.add(sourceVboFilePath);
 		panel.add(sourceVboFileChoose);
 
 		panel = new JPanel();
+		infoLabel = new JLabel();
+		infoLabel.setIcon(questionIcon);
+		infoLabel.setToolTipText("Select a video file. Supported video types are .avi and .mp4.");
 		inputControlsPanel.add(panel);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
 		panel.setBorder(BorderFactory.createTitledBorder("Source video file"));
+		panel.add(infoLabel);
 		panel.add(sourceVideoFilePath);
 		panel.add(sourceVideoFileChoose);
 
 		panel = new JPanel();
+		infoLabel = new JLabel();
+		infoLabel.setIcon(questionIcon);
+		infoLabel.setToolTipText("Select a folder to place the result files.");
 		inputControlsPanel.add(panel);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
 		panel.setBorder(BorderFactory.createTitledBorder("Output directory"));
+		panel.add(infoLabel);
 		panel.add(outputDirPath);
 		panel.add(outputDirChoose);
 
 		panel = new JPanel();
+		infoLabel = new JLabel();
+		infoLabel.setIcon(questionIcon);
+		infoLabel.setToolTipText("Select a name for the session of the .vbo and video data. "
+				+ "A folder with this name will be created under the output directory and will contain the final .vbo and video files.");
 		inputControlsPanel.add(panel);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
 		panel.setBorder(BorderFactory.createTitledBorder("Session name"));
+		panel.add(infoLabel);
 		panel.add(sessionName);
 
 		gpsDataAndVideoPanel.setBorder(BorderFactory.createTitledBorder("GPS and video synchronization"));
@@ -132,7 +152,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
 		mainPanel.add(gpsDataAndVideoPanel, BorderLayout.CENTER);
 
-		setTitle(APP_TITLE + "(" + VERSION_TAG + ")");
+		setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
 		setContentPane(mainPanel);
 		setResizable(false);
 	}
@@ -148,9 +168,9 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 	}
 
 	private void chooseSourceVbo() {
-		JFileChooser fileChooser = new JFileChooser();
+		final JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileFilter(new FileNameExtensionFilter(
-				"Vbo GPS data files", "vbo"));
+				"VBox data files", "vbo"));
 
 		if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			sourceVboFilePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
@@ -164,7 +184,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 	}
 
 	private void chooseSourceVideo() {
-		JFileChooser fileChooser = new JFileChooser();
+		final JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileFilter(new FileNameExtensionFilter(
 				"Video files", "mp4", "avi"));
 
@@ -175,6 +195,15 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 			} catch (Exception e) {
 				// ignore at this stage
 			}
+		}
+	}
+
+	private void chooseOutputDirectory() {
+		final JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+		if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+			outputDirPath.setText(fileChooser.getSelectedFile().getAbsolutePath());
 		}
 	}
 
@@ -198,15 +227,6 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 			throw new RuntimeException(String.format("Video of type %s is not supported", videoExtension));
 		}
 		return videoType;
-	}
-
-	private void chooseOutputDirectory() {
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-		if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-			outputDirPath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-		}
 	}
 
 	private void integrateGpsAndVideo() {
@@ -316,7 +336,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 	}
 
 	public static void main(String[] args) {
-		VboEditorGUI editorGui = new VboEditorGUI();
+		final VboEditorGUI editorGui = new VboEditorGUI();
 		editorGui.createGui();
 		editorGui.addActionListeners();
 		editorGui.pack();
