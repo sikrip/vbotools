@@ -101,16 +101,32 @@ public class VboEditor {
 		// add video metadata
 		final List<String> dataLines = vboSections.get("[data]");
 		final int gpsDataInterval = findGpsDataInterval(vboSections, dataSeparator);
-		for (int i = 0; i < dataLines.size(); i++) {
-			final String initialData = dataLines.get(i);
-			final String finalData;
-			if (gpsDataOffset < 0) {
-				// TODO handle case where GPS data start before video.
-				throw new UnsupportedOperationException("Cases where GPS data start before video are not yet supported");
-			} else {
-				finalData = String.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", (gpsDataOffset + i * gpsDataInterval));
+
+		int logLine = 0;
+		int numberOfInvalidLogLines = 0;
+		int firstValidOffset = 0;
+		if (gpsDataOffset < 0) {
+			// GPS data start before video
+			numberOfInvalidLogLines = Math.abs(gpsDataOffset) / gpsDataInterval;
+			firstValidOffset = Math.abs(gpsDataOffset) % gpsDataInterval;
+			for (; logLine < numberOfInvalidLogLines; logLine++) {
+				final String initialData = dataLines.get(logLine);
+				final String finalData = initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + NO_VIDEO_SYNCH_TIME;
+				dataLines.set(logLine, finalData);
 			}
-			dataLines.set(i, finalData);
+		}
+
+		for (; logLine < dataLines.size(); logLine++) {
+			final String initialData = dataLines.get(logLine);
+			final int logLineOffsetMS;
+			if (gpsDataOffset < 0) {
+				// GPS data start before video
+				logLineOffsetMS = firstValidOffset + (logLine - numberOfInvalidLogLines) * gpsDataInterval;
+			} else {
+				logLineOffsetMS = gpsDataOffset + logLine * gpsDataInterval;
+			}
+			final String finalData = String.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", logLineOffsetMS);
+			dataLines.set(logLine, finalData);
 		}
 
 		// Create the final vbo file

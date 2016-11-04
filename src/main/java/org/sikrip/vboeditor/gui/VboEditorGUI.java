@@ -237,7 +237,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 			VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, gpsDataTotalOffsetMillis);
 			VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
 
-			appendLog("Files created under " + outputDir + "/" + sessionName);
+			appendLog("Vbo and video files created under " + outputDir + "/" + sessionName);
 			appendLog("\n");
 
 			JOptionPane.showMessageDialog(this,
