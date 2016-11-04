@@ -34,7 +34,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
 	private final JTextField sessionName = new JTextField();
 
-	private final JPanel gpsDataAndVideoPanel = new JPanel();
+	private final JPanel gpsVideoSynchPanel = new JPanel();
 
 	private final JSpinner gpsDataOffsetMinutes = new JSpinner(new SpinnerNumberModel(
 			0, // initial
@@ -66,7 +66,21 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 	private final JButton about = new JButton("About");
 
 	private void createGui() {
+		createInputControlsPanel();
+		createGpsVideoSynchPanel();
+		createActionControlsPanel();
 
+		mainPanel.setPreferredSize(new Dimension(680, 420));
+		mainPanel.add(inputControlsPanel, BorderLayout.NORTH);
+		mainPanel.add(gpsVideoSynchPanel, BorderLayout.CENTER);
+		mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
+
+		setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
+		setContentPane(mainPanel);
+		setResizable(false);
+	}
+
+	private void createInputControlsPanel() {
 		inputControlsPanel.setLayout(new BoxLayout(inputControlsPanel, BoxLayout.PAGE_AXIS));
 
 		final Icon questionIcon = UIManager.getIcon("OptionPane.questionIcon");
@@ -117,44 +131,37 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		panel.setBorder(BorderFactory.createTitledBorder("Session name"));
 		panel.add(infoLabel);
 		panel.add(sessionName);
+	}
 
-		gpsDataAndVideoPanel.setBorder(BorderFactory.createTitledBorder("GPS and video synchronization"));
-		gpsDataAndVideoPanel.add(new JLabel("GPS data start "));
-		gpsDataAndVideoPanel.add(gpsDataOffsetMinutes);
-		gpsDataAndVideoPanel.add(new JLabel("m"));
-		gpsDataAndVideoPanel.add(gpsDataOffsetSeconds);
-		gpsDataAndVideoPanel.add(new JLabel("s"));
-		gpsDataAndVideoPanel.add(gpsDataOffsetMillis);
-		gpsDataAndVideoPanel.add(new JLabel("ms"));
-		gpsDataAndVideoPanel.add(offsetType);
-		gpsDataAndVideoPanel.add(new JLabel(" video data."));
-		gpsDataAndVideoPanel.add(resetOffset);
-
+	private void createActionControlsPanel() {
 		actionControlsPanel.setLayout(new BorderLayout());
 		actionControlsPanel.setBorder(BorderFactory.createEtchedBorder());
 
 		logText.setEditable(false);
-
-		JScrollPane logScroll = new JScrollPane(logText);
+		final JScrollPane logScroll = new JScrollPane(logText);
 		logScroll.setPreferredSize(new Dimension(600, 100));
 		logScroll.setBorder(BorderFactory.createTitledBorder("Log"));
 		actionControlsPanel.add(logScroll, BorderLayout.CENTER);
 
-		panel = new JPanel();
-		//panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
+		final JPanel panel = new JPanel();
 		panel.add(vboVideoIntegrate);
 		panel.add(clearAll);
 		panel.add(about);
 		actionControlsPanel.add(panel, BorderLayout.NORTH);
+	}
 
-		mainPanel.setPreferredSize(new Dimension(680, 420));
-		mainPanel.add(inputControlsPanel, BorderLayout.NORTH);
-		mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
-		mainPanel.add(gpsDataAndVideoPanel, BorderLayout.CENTER);
-
-		setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
-		setContentPane(mainPanel);
-		setResizable(false);
+	private void createGpsVideoSynchPanel(){
+		gpsVideoSynchPanel.setBorder(BorderFactory.createTitledBorder("GPS and video synchronization"));
+		gpsVideoSynchPanel.add(new JLabel("GPS data start "));
+		gpsVideoSynchPanel.add(gpsDataOffsetMinutes);
+		gpsVideoSynchPanel.add(new JLabel("m"));
+		gpsVideoSynchPanel.add(gpsDataOffsetSeconds);
+		gpsVideoSynchPanel.add(new JLabel("s"));
+		gpsVideoSynchPanel.add(gpsDataOffsetMillis);
+		gpsVideoSynchPanel.add(new JLabel("ms"));
+		gpsVideoSynchPanel.add(offsetType);
+		gpsVideoSynchPanel.add(new JLabel(" video data."));
+		gpsVideoSynchPanel.add(resetOffset);
 	}
 
 	private void addActionListeners() {
