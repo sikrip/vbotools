@@ -13,6 +13,10 @@ import com.google.common.base.Strings;
 
 final class VboEditorGUI extends JFrame implements ActionListener {
 
+	private final static String VERSION_TAG = "0.1Beta";
+
+	private static final String APP_TITLE = "GPS(vbo) and Video data integrator";
+
 	private final static String[] OFFSET_TYPES = new String[] { "After", "Before" };
 
 	private final JPanel mainPanel = new JPanel(new BorderLayout());
@@ -43,6 +47,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 			0, //min
 			59, //max
 			1)); // step
+
 	private final JSpinner gpsDataOffsetMillis = new JSpinner(new SpinnerNumberModel(
 			0, // initial
 			0, //min
@@ -127,7 +132,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
 		mainPanel.add(gpsDataAndVideoPanel, BorderLayout.CENTER);
 
-		setTitle("GPS(vbo) and Video data integrator");
+		setTitle(APP_TITLE + "(" + VERSION_TAG + ")");
 		setContentPane(mainPanel);
 		setResizable(false);
 	}
@@ -276,15 +281,22 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 	}
 
 	private void showAboutDialog() {
-		JOptionPane.showMessageDialog(this, "Created by George Sikalias ("
-				+ "sikrip@gmail.com, "
-				+ "facebook.com/sikrip, "
-				+ "@sikrip on twitter). Enjoy!", "About this software", JOptionPane.INFORMATION_MESSAGE);
+		final String aboutMessage = "<html>" +
+				"<h2>" + APP_TITLE + "</h2>" +
+				"<h2> Version " + VERSION_TAG + "</h2>" +
+				"<h4>A little tool that can help you synch and integrate GPS and Video data so you can do video analysis on Circuit Tools!</h4>" +
+				"<p>Author George Sikalias (sikrip)</p>" +
+				"<p>Contact Info: " +
+				"sikrip@gmail.com, " +
+				"facebook.com/sikrip, " +
+				"@sikrip on twitter</p>" +
+				"</html>";
+		JOptionPane.showMessageDialog(this, aboutMessage, "About this software", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		Object source = e.getSource();
+		final Object source = e.getSource();
 
 		if (source == sourceVboFileChoose) {
 			chooseSourceVbo();
