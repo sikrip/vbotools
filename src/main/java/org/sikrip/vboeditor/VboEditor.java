@@ -79,6 +79,9 @@ public class VboEditor {
 		final Map<String, List<String>> vboSections = readVboSections(originalVboPath);
 
 		final List<String> headerData = vboSections.get("[header]");
+		if(headerData.contains("avifileindex") || headerData.contains("avisynctime")){
+			throw new IllegalArgumentException("Source vbo file already contains video information, please select a file without video information.");
+		}
 
 		// add entries in header
 		headerData.add("avifileindex");
@@ -154,8 +157,8 @@ public class VboEditor {
 
 	public static int identifyGPSRefreshRate(String vboFilePath) throws IOException {
 
-		Map<String, List<String>> vboSections = readVboSections(vboFilePath);
-		int gpsDataInterval = findGpsDataInterval(vboSections, getDataSeparator(vboSections));
+		final Map<String, List<String>> vboSections = readVboSections(vboFilePath);
+		final int gpsDataInterval = findGpsDataInterval(vboSections, getDataSeparator(vboSections));
 
 		switch (gpsDataInterval) {
 		case 1000:

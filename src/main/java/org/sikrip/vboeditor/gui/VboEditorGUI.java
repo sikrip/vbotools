@@ -147,7 +147,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 		panel.add(about);
 		actionControlsPanel.add(panel, BorderLayout.NORTH);
 
-		mainPanel.setPreferredSize(new Dimension(680, 400));
+		mainPanel.setPreferredSize(new Dimension(680, 420));
 		mainPanel.add(inputControlsPanel, BorderLayout.NORTH);
 		mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
 		mainPanel.add(gpsDataAndVideoPanel, BorderLayout.CENTER);
