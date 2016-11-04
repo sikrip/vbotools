@@ -13,7 +13,7 @@ import com.google.common.base.Strings;
 
 final class VboEditorGUI extends JFrame implements ActionListener {
 
-	private final static String VERSION_TAG = "0.1Beta";
+	private final static String VERSION_TAG = "0.2Beta";
 
 	private static final String APP_TITLE = "GPS(vbo) and Video data integrator";
 
