@@ -21,12 +21,10 @@ import com.google.common.collect.Lists;
 
 public class VboEditor {
 
-	public static final String VIDEO_FILE_SUFFIX = "0001";
-
-	public static final String NO_VIDEO_SYNCH_TIME = "-00000001";
-
+	private static final String VIDEO_FILE_SUFFIX = "0001";
+	private static final String NO_VIDEO_SYNCH_TIME = "-00000001";
 	private final static String[] DATA_SEPARATORS = { " ", ",", "\t" };
-	public static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
+	private static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
 
 	public enum VideoType {
 		MP4, AVI
@@ -136,18 +134,17 @@ public class VboEditor {
 		if (createOutputDirectory(outputDirBasePath + "/" + sessionName)) {
 			try (final BufferedWriter writer = new BufferedWriter(
 					new FileWriter(outputDirBasePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
-				writer.write(String.format("File created on %s using VBO Editor\n\n", new Date()));
-
+				writer.write(String.format("File created on %s using VBO Editor", new Date()));
+				writer.newLine();
 				writeSection(vboSections, writer, "[header]");
-				writer.write("\n");
-				writeSection(vboSections, writer, "[channel units]");
-				writer.write("\n");
 				writeSection(vboSections, writer, "[comments]");
-				writer.write("\n");
+				//
+				writeSection(vboSections, writer, "[channel units]");
+				writeSection(vboSections, writer, "[session data]");
+				writeSection(vboSections, writer, "[laptiming]");
+				//
 				writeSection(vboSections, writer, "[avi]");
-				writer.write("\n");
 				writeSection(vboSections, writer, "[column names]");
-				writer.write("\n");
 				writeSection(vboSections, writer, "[data]");
 			}
 		} else {
@@ -235,11 +232,12 @@ public class VboEditor {
 	private static void writeSection(Map<String, List<String>> vboSections, BufferedWriter writer, String sectionName) throws IOException {
 		if (vboSections.containsKey(sectionName)) {
 			writer.write(sectionName);
-			writer.write("\n");
+			writer.newLine();
 			for (String sectionEntry : vboSections.get(sectionName)) {
 				writer.write(sectionEntry);
-				writer.write("\n");
+				writer.newLine();
 			}
+			writer.newLine();
 		}
 	}
 

@@ -6,7 +6,7 @@
 
     <groupId>org.sikrip</groupId>
     <artifactId>vbo-video-integrator</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.3-SNAPSHOT</version>
 
     <properties>
         <junit.version>4.12</junit.version>

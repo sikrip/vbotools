@@ -33,6 +33,18 @@ public class VboEditorTest {
 	}
 
 	@Test
+	public void verifyHarrysLapTimerVbo_ShouldHaveCustomSections() throws IOException {
+		final String basePath = getTestResourceUrl("/").getPath();
+
+		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sampleHarrysLapTimer.vbo", VboEditor.VideoType.MP4, "my-session", 0);
+
+		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+
+		assertTrue(vboWithVideoSections.containsKey("[session data]"));
+		assertTrue(vboWithVideoSections.containsKey("[laptiming]"));
+	}
+
+	@Test
 	public void verifyVideoMetadataIntegration_WhenGpsDataStartBeforeVideo() throws IOException {
 
 		final String basePath = getTestResourceUrl("/").getPath();
