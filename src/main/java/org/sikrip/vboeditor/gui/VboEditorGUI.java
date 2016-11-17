@@ -343,12 +343,16 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 	}
 
 	public static void main(String[] args) {
-		final VboEditorGUI editorGui = new VboEditorGUI();
-		editorGui.createGui();
-		editorGui.addActionListeners();
-		editorGui.pack();
-		editorGui.setLocationRelativeTo(null);
-		editorGui.setVisible(true);
-		editorGui.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				final VboEditorGUI editorGui = new VboEditorGUI();
+				editorGui.createGui();
+				editorGui.addActionListeners();
+				editorGui.pack();
+				editorGui.setLocationRelativeTo(null);
+				editorGui.setVisible(true);
+				editorGui.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			}
+		});
 	}
 }
