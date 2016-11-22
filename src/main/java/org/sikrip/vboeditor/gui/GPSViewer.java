@@ -19,6 +19,7 @@ final class GPSViewer extends JPanel implements ActionListener {
 
     private static final int MINIMUM_IMAGE_PADDING_IN_PX = 50;
     public static final int CURRENT_POSITION_MARKER_SIZE = 8;
+    public static final long ROUTE_DRAWING_MILLIS = 5;
 
     private final int width;
     private final int height;
@@ -27,13 +28,12 @@ final class GPSViewer extends JPanel implements ActionListener {
     private final JButton next;
     private final JButton next2;
     private final JButton playPause;
-    private final JButton stop;
+    private final JButton reset;
     private final JLabel speed;
 
     private final AtomicBoolean playFlag = new AtomicBoolean(false);
 
-    // TODO detect interval from vbo file
-    private final long interval = 100; //ms
+    private long gpsDataIntervalMillis;
 
     private final TraveledRoutePanel traveledRoutePanel;
 
@@ -56,7 +56,7 @@ final class GPSViewer extends JPanel implements ActionListener {
         prev = new JButton("<");
         next = new JButton(">");
         next2 = new JButton(">>");
-        stop = new JButton("Stop");
+        reset = new JButton("Reset");
         playPause = new JButton("Play");
         speed = new JLabel();
 
@@ -65,12 +65,12 @@ final class GPSViewer extends JPanel implements ActionListener {
         buttonsPanel.add(playPause);
         buttonsPanel.add(next);
         buttonsPanel.add(next2);
-        buttonsPanel.add(stop);
+        buttonsPanel.add(reset);
 
         prev2.addActionListener(this);
         prev.addActionListener(this);
         playPause.addActionListener(this);
-        stop.addActionListener(this);
+        reset.addActionListener(this);
         next.addActionListener(this);
         next2.addActionListener(this);
 
@@ -102,8 +102,8 @@ final class GPSViewer extends JPanel implements ActionListener {
             seek(-1);
         } else if (source == playPause) {
             playPause();
-        } else if (source == stop) {
-            stop();
+        } else if (source == reset) {
+            reset();
         } else if (source == next) {
             seek(1);
         } else if (source == next2) {
@@ -111,7 +111,7 @@ final class GPSViewer extends JPanel implements ActionListener {
         }
     }
 
-    private void stop() {
+    private void reset() {
         playFlag.set(false);
         currentPositionIdx = 0;
         playPause.setText("Play");
@@ -128,12 +128,12 @@ final class GPSViewer extends JPanel implements ActionListener {
 
     void enableControls(boolean enable) {
         enableScanControls(enable);
-        stop.setEnabled(enable);
+        reset.setEnabled(enable);
         playPause.setEnabled(enable);
     }
 
     long getCurrentTime() {
-        return currentPositionIdx * interval;
+        return currentPositionIdx * gpsDataIntervalMillis;
     }
 
     void playPause() {
@@ -152,7 +152,7 @@ final class GPSViewer extends JPanel implements ActionListener {
                         if (playFlag.get()) {
                             seek(1);
                             try {
-                                Thread.sleep(interval);
+                                Thread.sleep(gpsDataIntervalMillis - ROUTE_DRAWING_MILLIS);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
@@ -183,6 +183,10 @@ final class GPSViewer extends JPanel implements ActionListener {
     }
 
     private void createRoutePoints(final List<TraveledRouteCoordinate> traveledRouteCoordinates) {
+        if (traveledRouteCoordinates.isEmpty()) {
+            throw new RuntimeException("Cannot read travelled route");
+        }
+        gpsDataIntervalMillis = traveledRouteCoordinates.get(0).getGpsDataInterval();
         final Dimension size = getSize();
 
         traveledRoutePoints.clear();

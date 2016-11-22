@@ -23,6 +23,8 @@ public class VboEditor {
 
     public static List<TraveledRouteCoordinate> getTraveledRoute(String vboFilePath) throws IOException {
         final Map<String, List<String>> vboSections = readVboSections(vboFilePath);
+        final String dataSeparator = getDataSeparator(vboSections);
+        final int gpsDataInterval = findGpsDataInterval(vboSections, dataSeparator);
 
         List<String> header = vboSections.get(HEADER_KEY);
         int timeIdx = header.indexOf("time");
@@ -33,7 +35,7 @@ public class VboEditor {
 
         final List<TraveledRouteCoordinate> coordinates = new ArrayList<>();
 
-        final String dataSeparator = getDataSeparator(vboSections);
+
         for (String dataLine : vboSections.get(DATA_KEY)) {
             String[] data = dataLine.split(dataSeparator);
 
@@ -42,7 +44,7 @@ public class VboEditor {
                 Double longitude = Double.valueOf(data[longitudeIdx]);
                 Double time = Double.valueOf(data[timeIdx]);
                 Double speed = Double.valueOf(data[speedIdx]);
-                coordinates.add(new TraveledRouteCoordinate(latitude, longitude, time, speed));
+                coordinates.add(new TraveledRouteCoordinate(latitude, longitude, time, speed, gpsDataInterval));
             }
 
         }
@@ -186,7 +188,7 @@ public class VboEditor {
 
         final int numberOfSamples = 10;
 
-        // skip soma entries at the start of the data because sush entries do not contain stable time info
+        // skip some entries at the start of the data because such entries do not contain stable time info
         final int entriesToSkip = 10;
 
         if (vboFileSections.get(DATA_KEY).size() < entriesToSkip + numberOfSamples) {

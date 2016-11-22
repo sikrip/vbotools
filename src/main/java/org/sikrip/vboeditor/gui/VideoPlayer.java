@@ -25,7 +25,7 @@ final class VideoPlayer implements ActionListener {
     private final JFXPanel videoPanel;
     private MediaPlayer mediaPlayer;
     private final JButton playPause;
-    private final JButton stop;
+    private final JButton reset;
 
     private final JButton fw50;
     private final JButton fw100;
@@ -69,9 +69,9 @@ final class VideoPlayer implements ActionListener {
         fw100.addActionListener(this);
         buttonsPanel.add(fw100);
 
-        stop = new JButton("Stop");
-        stop.addActionListener(this);
-        buttonsPanel.add(stop);
+        reset = new JButton("Reset");
+        reset.addActionListener(this);
+        buttonsPanel.add(reset);
 
         enableSeekControls(true);
     }
@@ -115,7 +115,7 @@ final class VideoPlayer implements ActionListener {
         mediaPlayer.dispose();
     }
 
-    private void stop() {
+    private void reset() {
         mediaPlayer.stop();
         playPause.setText("Play");
         enableSeekControls(true);
@@ -130,7 +130,7 @@ final class VideoPlayer implements ActionListener {
 
     void enableControls(boolean enable) {
         enableSeekControls(enable);
-        stop.setEnabled(enable);
+        reset.setEnabled(enable);
         playPause.setEnabled(enable);
     }
 
@@ -152,8 +152,8 @@ final class VideoPlayer implements ActionListener {
 
         if (source == playPause) {
             playPause();
-        } else if (source == stop) {
-            stop();
+        } else if (source == reset) {
+            reset();
         } else if (source == fw50) {
             seek(50);
         } else if (source == fw100) {
