@@ -134,8 +134,8 @@ final class VideoPlayer implements ActionListener {
         playPause.setEnabled(enable);
     }
 
-    double getCurrentTime() {
-        return mediaPlayer.getCurrentTime().toMillis();
+    long getCurrentTime() {
+        return (long) mediaPlayer.getCurrentTime().toMillis();
     }
 
     private void seek(double durationMillis) {

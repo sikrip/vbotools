@@ -13,7 +13,7 @@ import com.google.common.base.Strings;
 
 final class VboEditorGUI extends JFrame implements ActionListener {
 
-    private final static String VERSION_TAG = "0.3Beta";
+    private final static String VERSION_TAG = "0.4Beta";
 
     private static final String APP_TITLE = "GPS(vbo) and Video data integrator";
 
@@ -249,6 +249,23 @@ final class VboEditorGUI extends JFrame implements ActionListener {
                 synchronizerDialog.loadVideo(sourceVideoFilePath.getText());
                 synchronizerDialog.loadTravelledRout(sourceVboFilePath.getText());
                 synchronizerDialog.setVisible(true);
+
+                Long offset = synchronizerDialog.getOffset();//ms
+                if (offset != null) {
+
+                    // Positive offset indicates that gps data start after video
+                    offsetType.setSelectedIndex(offset >= 0 ? 0 : 1);
+
+                    offset = Math.abs(offset);
+
+                    long minutes = offset / (1000 * 60);
+                    long seconds = offset / 1000;
+                    long millis = offset - (minutes * 1000 * 60) - (seconds * 1000);
+
+                    gpsDataOffsetMinutes.setValue(minutes);
+                    gpsDataOffsetSeconds.setValue(seconds);
+                    gpsDataOffsetMillis.setValue(millis);
+                }
             }
         });
     }

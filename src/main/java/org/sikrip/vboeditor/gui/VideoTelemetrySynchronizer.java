@@ -16,7 +16,7 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
     private final JButton okButton;
     private final JButton cancelButton;
     private boolean playingBoth = false;
-    private Double offset;
+    private Long offset;
 
     public VideoTelemetrySynchronizer(Frame owner, boolean modal) {
         super(owner, modal);
@@ -100,13 +100,19 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
         }
     }
 
+    public Long getOffset() {
+
+        return offset;
+    }
+
     private void cancelSynchronization() {
         offset = null;
         closeWindow();
     }
 
     private void acceptSynchronization() {
-        offset = gpsViewer.getCurrentTime() - videoPlayer.getCurrentTime();
+        // positive number indicates that gps data start after video
+        offset = videoPlayer.getCurrentTime() - gpsViewer.getCurrentTime();
         closeWindow();
     }
 

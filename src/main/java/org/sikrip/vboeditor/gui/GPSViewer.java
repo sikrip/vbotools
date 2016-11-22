@@ -132,7 +132,7 @@ final class GPSViewer extends JPanel implements ActionListener {
         playPause.setEnabled(enable);
     }
 
-    double getCurrentTime() {
+    long getCurrentTime() {
         return currentPositionIdx * interval;
     }
 
