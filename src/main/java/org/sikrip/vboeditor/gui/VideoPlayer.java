@@ -9,6 +9,7 @@ import javafx.scene.media.MediaView;
 import javafx.util.Duration;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,13 +17,13 @@ import java.io.File;
 import java.net.MalformedURLException;
 
 
-final class VideoPlayer implements ActionListener {
+final class VideoPlayer extends JPanel implements ActionListener {
 
-    private final int width;
-    private final int height;
+    private final JButton fileChoose = new JButton("...");
+    private final JTextField filePath = new JTextField("/home/sikripefg/provlima-sasman.MP4");
 
-    final JPanel videoPlayerPanel;
     private final JFXPanel videoPanel;
+
     private MediaPlayer mediaPlayer;
     private final JButton playPause;
     private final JButton reset;
@@ -32,61 +33,62 @@ final class VideoPlayer implements ActionListener {
     private final JButton bw50;
     private final JButton bw100;
 
-    VideoPlayer(int width, int height) {
-        this.width = width;
-        this.height = height;
+    VideoPlayer() {
+
+        setBorder(BorderFactory.createTitledBorder("Video"));
 
         // inits Java FX toolkit
         videoPanel = new JFXPanel();
 
+        setLayout(new BorderLayout());
+        add(videoPanel, BorderLayout.CENTER);
 
-        videoPlayerPanel = new JPanel(new BorderLayout());
-        //videoPlayerPanel.setBorder(BorderFactory.createTitledBorder("Video"));
-        videoPlayerPanel.add(videoPanel, BorderLayout.CENTER);
-        videoPlayerPanel.setPreferredSize(new Dimension(width, height));
+        final JPanel northPanel = new JPanel();
+        northPanel.setLayout(new BoxLayout(northPanel, BoxLayout.LINE_AXIS));
+        northPanel.add(filePath);
+        northPanel.add(fileChoose);
+        fileChoose.setToolTipText("Select a video file. Supported video types are .avi and .mp4.");
+        fileChoose.addActionListener(this);
+        add(northPanel, BorderLayout.NORTH);
 
-        final JPanel buttonsPanel = new JPanel();
-        videoPlayerPanel.add(buttonsPanel, BorderLayout.SOUTH);
-
-
+        final JPanel southPanelPanel = new JPanel();
+        add(southPanelPanel, BorderLayout.SOUTH);
         bw100 = new JButton("<<");
         bw100.addActionListener(this);
-        buttonsPanel.add(bw100);
+        southPanelPanel.add(bw100);
 
         bw50 = new JButton("<");
         bw50.addActionListener(this);
-        buttonsPanel.add(bw50);
+        southPanelPanel.add(bw50);
 
         playPause = new JButton("Play");
         playPause.addActionListener(this);
-        buttonsPanel.add(playPause);
+        southPanelPanel.add(playPause);
 
         fw50 = new JButton(">");
         fw50.addActionListener(this);
-        buttonsPanel.add(fw50);
+        southPanelPanel.add(fw50);
 
         fw100 = new JButton(">>");
         fw100.addActionListener(this);
-        buttonsPanel.add(fw100);
+        southPanelPanel.add(fw100);
 
         reset = new JButton("Reset");
         reset.addActionListener(this);
-        buttonsPanel.add(reset);
+        southPanelPanel.add(reset);
 
         enableSeekControls(true);
     }
 
-    JPanel getPanel() {
-        return videoPlayerPanel;
-    }
-
-    void loadVideo(String filePath) {
+    private void loadVideo() {
         try {
-            final File videoFile = new File(filePath);
+
+            Dimension size = getSize();
+            final File videoFile = new File(filePath.getText());
             final Media media = new Media(videoFile.toURI().toURL().toString());
             mediaPlayer = new MediaPlayer(media);
             MediaView mediaView = new MediaView(mediaPlayer);
-            final Scene scene = new Scene(new Group(mediaView), width, height);
+            final Scene scene = new Scene(new Group(mediaView), size.getWidth(), size.getHeight());
             videoPanel.setScene(scene);
 
             mediaView.setFitWidth(scene.getWidth());
@@ -138,11 +140,31 @@ final class VideoPlayer implements ActionListener {
         return (long) mediaPlayer.getCurrentTime().toMillis();
     }
 
+    String getFilePath() {
+        return filePath.getText();
+    }
+
     private void seek(double durationMillis) {
         if (durationMillis < 0) {
             mediaPlayer.seek(mediaPlayer.getCurrentTime().subtract(new Duration(Math.abs(durationMillis))));
         } else {
             mediaPlayer.seek(mediaPlayer.getCurrentTime().add(new Duration(durationMillis)));
+        }
+    }
+
+    private void chooseSourceVideo() {
+        final JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter(
+                "Video files", "mp4", "avi"));
+
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            fileChoose.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            try {
+                //appendLog("Video file type is " + getVideoType());
+            } catch (Exception e) {
+                // ignore at this stage
+            }
+            loadVideo();
         }
     }
 
@@ -162,6 +184,8 @@ final class VideoPlayer implements ActionListener {
             seek(-50);
         } else if (source == bw100) {
             seek(-100);
+        } else if (source == fileChoose) {
+            chooseSourceVideo();
         }
     }
 }

@@ -3,9 +3,10 @@ package org.sikrip.vboeditor.gui;
 
 import org.sikrip.vboeditor.VboEditor;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
-import org.sikrip.vboeditor.model.TraveledRouteXY;
+import org.sikrip.vboeditor.model.TraveledRoutePoint;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,21 +16,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-final class GPSViewer extends JPanel implements ActionListener {
+final class TelemetryPlayer extends JPanel implements ActionListener {
 
     private static final int MINIMUM_IMAGE_PADDING_IN_PX = 50;
     public static final int CURRENT_POSITION_MARKER_SIZE = 8;
     public static final long ROUTE_DRAWING_MILLIS = 5;
 
-    private final int width;
-    private final int height;
     private final JButton prev2;
     private final JButton prev;
     private final JButton next;
     private final JButton next2;
     private final JButton playPause;
     private final JButton reset;
-    private final JLabel speed;
+
+    private final JButton fileChoose = new JButton("...");
+    private final JTextField filePath = new JTextField("/home/sikripefg/sample-vbo-from-dbn.vbo");
 
     private final AtomicBoolean playFlag = new AtomicBoolean(false);
 
@@ -39,18 +40,26 @@ final class GPSViewer extends JPanel implements ActionListener {
 
 
     private int currentPositionIdx = 0;
-    private final List<TraveledRouteXY> traveledRoutePoints = new ArrayList<>();
+    private final List<TraveledRoutePoint> traveledRoutePoints = new ArrayList<>();
 
-    public GPSViewer(int width, int height) {
-        this.width = width;
-        this.height = height;
-
+    public TelemetryPlayer() {
         setLayout(new BorderLayout());
+        setBorder(BorderFactory.createTitledBorder("Telemetry"));
+
         traveledRoutePanel = new TraveledRoutePanel();
 
         add(traveledRoutePanel, BorderLayout.CENTER);
 
-        final JPanel buttonsPanel = new JPanel();
+        final JPanel northPanel = new JPanel();
+        northPanel.setLayout(new BoxLayout(northPanel, BoxLayout.LINE_AXIS));
+        northPanel.add(filePath);
+        northPanel.add(fileChoose);
+        fileChoose.setToolTipText("Select a .vbo file that do not contain any video related data.");
+        add(northPanel, BorderLayout.NORTH);
+
+        fileChoose.addActionListener(this);
+
+        final JPanel southPanel = new JPanel();
 
         prev2 = new JButton("<<");
         prev = new JButton("<");
@@ -58,14 +67,13 @@ final class GPSViewer extends JPanel implements ActionListener {
         next2 = new JButton(">>");
         reset = new JButton("Reset");
         playPause = new JButton("Play");
-        speed = new JLabel();
 
-        buttonsPanel.add(prev2);
-        buttonsPanel.add(prev);
-        buttonsPanel.add(playPause);
-        buttonsPanel.add(next);
-        buttonsPanel.add(next2);
-        buttonsPanel.add(reset);
+        southPanel.add(prev2);
+        southPanel.add(prev);
+        southPanel.add(playPause);
+        southPanel.add(next);
+        southPanel.add(next2);
+        southPanel.add(reset);
 
         prev2.addActionListener(this);
         prev.addActionListener(this);
@@ -74,21 +82,32 @@ final class GPSViewer extends JPanel implements ActionListener {
         next.addActionListener(this);
         next2.addActionListener(this);
 
-        add(speed, BorderLayout.NORTH);
-        add(buttonsPanel, BorderLayout.SOUTH);
+        add(southPanel, BorderLayout.SOUTH);
     }
 
-    public Dimension getPreferredSize() {
-        return new Dimension(width, height);
-    }
-
-    public void loadTraveledRoute(String vboFilePath) {
+    private void loadTraveledRoute() {
         try {
-            createRoutePoints(VboEditor.getTraveledRoute(vboFilePath));
-            speed.setText("Speed:" + traveledRoutePoints.get(currentPositionIdx).getSpeed());
+            createRoutePoints(VboEditor.getTraveledRoute(filePath.getText()));
             repaint();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void chooseSourceVbo() {
+        final JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter(
+                "VBox data files", "vbo"));
+
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+
+            try {
+                //appendLog("GPS refresh rate is " + VboEditor.identifyGPSRefreshRate(sourceVboFilePath.getText()) + "HZ");
+            } catch (Exception e) {
+                // ignore at this stage
+            }
+            loadTraveledRoute();
         }
     }
 
@@ -108,6 +127,8 @@ final class GPSViewer extends JPanel implements ActionListener {
             seek(1);
         } else if (source == next2) {
             seek(2);
+        } else if (source == fileChoose) {
+            chooseSourceVbo();
         }
     }
 
@@ -134,6 +155,10 @@ final class GPSViewer extends JPanel implements ActionListener {
 
     long getCurrentTime() {
         return currentPositionIdx * gpsDataIntervalMillis;
+    }
+
+    String getFilePath() {
+        return filePath.getText();
     }
 
     void playPause() {
@@ -166,19 +191,13 @@ final class GPSViewer extends JPanel implements ActionListener {
         }
     }
 
-    public boolean isPlaying() {
-        return playFlag.get();
-    }
-
-    private void seek(int amout) {
-        currentPositionIdx += amout;
+    private void seek(int amount) {
+        currentPositionIdx += amount;
         if (currentPositionIdx < 0) {
             currentPositionIdx = 0;
         } else if (currentPositionIdx >= traveledRoutePoints.size()) {
             currentPositionIdx = traveledRoutePoints.size() - 1;
         }
-
-        speed.setText("Speed:" + traveledRoutePoints.get(currentPositionIdx).getSpeed());
         repaint();
     }
 
@@ -258,7 +277,7 @@ final class GPSViewer extends JPanel implements ActionListener {
             int adjustedX = (int) (actualWidth - widthPadding - (point.getX() * globalRatio));
             int adjustedY = (int) (actualHeight - heightPadding - (point.getY() * globalRatio));
 
-            traveledRoutePoints.add(new TraveledRouteXY(adjustedX, adjustedY, coordinate.getTime(), coordinate.getSpeed()));
+            traveledRoutePoints.add(new TraveledRoutePoint(adjustedX, adjustedY, coordinate.getTime(), coordinate.getSpeed()));
         }
     }
 
@@ -268,18 +287,23 @@ final class GPSViewer extends JPanel implements ActionListener {
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
 
-            final Polygon traveledRoute = new Polygon();
+            if (!traveledRoutePoints.isEmpty()) {
+                final Polygon traveledRoute = new Polygon();
 
-            for (TraveledRouteXY traveledRoutePoint : traveledRoutePoints) {
-                traveledRoute.addPoint(traveledRoutePoint.getX(), traveledRoutePoint.getY());
+                for (TraveledRoutePoint traveledRoutePoint : traveledRoutePoints) {
+                    traveledRoute.addPoint(traveledRoutePoint.getX(), traveledRoutePoint.getY());
+                }
+                g.drawPolygon(traveledRoute);
+                g.setColor(Color.red);
+
+                TraveledRoutePoint currentPosition = traveledRoutePoints.get(currentPositionIdx);
+                g.fillOval(currentPosition.getX() - CURRENT_POSITION_MARKER_SIZE / 2,
+                        currentPosition.getY() - CURRENT_POSITION_MARKER_SIZE / 2,
+                        CURRENT_POSITION_MARKER_SIZE, CURRENT_POSITION_MARKER_SIZE);
+
+                g.setColor(Color.BLUE);
+                g.drawString("Speed:" + traveledRoutePoints.get(currentPositionIdx).getSpeed(), 5, 25);
             }
-            g.drawPolygon(traveledRoute);
-            g.setColor(Color.red);
-
-            TraveledRouteXY currentPosition = traveledRoutePoints.get(currentPositionIdx);
-            g.fillOval(currentPosition.getX() - CURRENT_POSITION_MARKER_SIZE / 2,
-                    currentPosition.getY() - CURRENT_POSITION_MARKER_SIZE / 2,
-                    CURRENT_POSITION_MARKER_SIZE, CURRENT_POSITION_MARKER_SIZE);
         }
     }
 

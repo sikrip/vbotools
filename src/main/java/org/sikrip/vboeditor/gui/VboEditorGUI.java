@@ -15,123 +15,66 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
     private final static String VERSION_TAG = "0.4Beta";
 
-    private static final String APP_TITLE = "GPS(vbo) and Video data integrator";
-
-    private final static String[] OFFSET_TYPES = new String[]{"After", "Before"};
+    private static final String APP_TITLE = "Telemetry and Video data integrator";
 
     private final JPanel mainPanel = new JPanel(new BorderLayout());
 
     private final JPanel inputControlsPanel = new JPanel();
-
-    private final JButton sourceVboFileChoose = new JButton("...");
-    private final JTextField sourceVboFilePath = new JTextField("/home/sikripefg/sample-vbo-from-dbn.vbo");
-
-    private final JButton sourceVideoFileChoose = new JButton("...");
-    private final JTextField sourceVideoFilePath = new JTextField("/home/sikripefg/provlima-sasman.MP4");
 
     private final JButton outputDirChoose = new JButton("...");
     private final JTextField outputDirPath = new JTextField();
 
     private final JTextField sessionName = new JTextField();
 
-    private final JPanel gpsVideoSynchPanel = new JPanel();
-
-    private final JSpinner gpsDataOffsetMinutes = new JSpinner(new SpinnerNumberModel(
-            0, // initial
-            0, //min
-            9999, //max
-            1)); // step
-
-    private final JSpinner gpsDataOffsetSeconds = new JSpinner(new SpinnerNumberModel(
-            0, // initial
-            0, //min
-            59, //max
-            1)); // step
-
-    private final JSpinner gpsDataOffsetMillis = new JSpinner(new SpinnerNumberModel(
-            0, // initial
-            0, //min
-            9999, //max
-            50)); // step
-
-    private final JComboBox offsetType = new JComboBox(OFFSET_TYPES);
-
-    private final JButton resetSynchronizationButton = new JButton("(reset)");
-    private final JButton synchronizationDialogButton = new JButton("Help me synchronize this!");
+    private final SynchronizationPanel synchronizationPanel = new SynchronizationPanel();
 
     private final JPanel actionControlsPanel = new JPanel();
 
     private final JTextArea logText = new JTextArea();
-    private final JButton vboVideoIntegrate = new JButton("Integrate GPS and video data");
+    private final JButton vboVideoIntegrate = new JButton("Integrate telemetry / video data");
     private final JButton clearAll = new JButton("Clear all");
     private final JButton about = new JButton("About");
 
     private void createGui() {
         createInputControlsPanel();
-        createGpsVideoSynchPanel();
         createActionControlsPanel();
 
-        mainPanel.setPreferredSize(new Dimension(680, 440));
+        mainPanel.setPreferredSize(new Dimension(800, 600));
         mainPanel.add(inputControlsPanel, BorderLayout.NORTH);
-        mainPanel.add(gpsVideoSynchPanel, BorderLayout.CENTER);
+        mainPanel.add(synchronizationPanel, BorderLayout.CENTER);
         mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
 
         setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
         setContentPane(mainPanel);
-        setResizable(false);
     }
 
     private void createInputControlsPanel() {
-        inputControlsPanel.setLayout(new BoxLayout(inputControlsPanel, BoxLayout.PAGE_AXIS));
+        inputControlsPanel.setLayout(new BoxLayout(inputControlsPanel, BoxLayout.LINE_AXIS));
 
-        final Icon questionIcon = UIManager.getIcon("OptionPane.questionIcon");
+        JLabel label;
 
-        JPanel panel;
-        JLabel infoLabel;
+        label = new JLabel("Output folder");
+        inputControlsPanel.add(label);
+        inputControlsPanel.add(outputDirPath);
+        inputControlsPanel.add(outputDirChoose);
 
-        panel = new JPanel();
-        infoLabel = new JLabel();
-        infoLabel.setIcon(questionIcon);
-        infoLabel.setToolTipText("Select a .vbo file that do not contain any video related data.");
-        inputControlsPanel.add(panel);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder("Source vbo file"));
-        panel.add(infoLabel);
-        panel.add(sourceVboFilePath);
-        panel.add(sourceVboFileChoose);
+        String toolTipText = "Select a folder to place the result files.";
+        label.setToolTipText(toolTipText);
+        outputDirPath.setToolTipText(toolTipText);
+        outputDirChoose.setToolTipText(toolTipText);
 
-        panel = new JPanel();
-        infoLabel = new JLabel();
-        infoLabel.setIcon(questionIcon);
-        infoLabel.setToolTipText("Select a video file. Supported video types are .avi and .mp4.");
-        inputControlsPanel.add(panel);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder("Source video file"));
-        panel.add(infoLabel);
-        panel.add(sourceVideoFilePath);
-        panel.add(sourceVideoFileChoose);
+        inputControlsPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 
-        panel = new JPanel();
-        infoLabel = new JLabel();
-        infoLabel.setIcon(questionIcon);
-        infoLabel.setToolTipText("Select a folder to place the result files.");
-        inputControlsPanel.add(panel);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder("Output directory"));
-        panel.add(infoLabel);
-        panel.add(outputDirPath);
-        panel.add(outputDirChoose);
+        label = new JLabel("Session Name");
+        sessionName.setToolTipText(toolTipText);
+        inputControlsPanel.add(label);
+        inputControlsPanel.add(sessionName);
 
-        panel = new JPanel();
-        infoLabel = new JLabel();
-        infoLabel.setIcon(questionIcon);
-        infoLabel.setToolTipText("Select a name for the session of the .vbo and video data. "
-                + "A folder with this name will be created under the output directory and will contain the final .vbo and video files.");
-        inputControlsPanel.add(panel);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder("Session name"));
-        panel.add(infoLabel);
-        panel.add(sessionName);
+        toolTipText = "<html>Select a name for the session of the .vbo and video data. "
+                + "A folder with this name will be created under the output directory " +
+                "and will contain the final .vbo and video files.</html>";
+        label.setToolTipText(toolTipText);
+        sessionName.setToolTipText(toolTipText);
     }
 
     private void createActionControlsPanel() {
@@ -151,61 +94,11 @@ final class VboEditorGUI extends JFrame implements ActionListener {
         actionControlsPanel.add(panel, BorderLayout.NORTH);
     }
 
-    private void createGpsVideoSynchPanel() {
-        gpsVideoSynchPanel.setBorder(BorderFactory.createTitledBorder("GPS and video synchronization"));
-        gpsVideoSynchPanel.add(new JLabel("GPS data start "));
-        gpsVideoSynchPanel.add(gpsDataOffsetMinutes);
-        gpsVideoSynchPanel.add(new JLabel("m"));
-        gpsVideoSynchPanel.add(gpsDataOffsetSeconds);
-        gpsVideoSynchPanel.add(new JLabel("s"));
-        gpsVideoSynchPanel.add(gpsDataOffsetMillis);
-        gpsVideoSynchPanel.add(new JLabel("ms"));
-        gpsVideoSynchPanel.add(offsetType);
-        gpsVideoSynchPanel.add(new JLabel(" video data."));
-        gpsVideoSynchPanel.add(resetSynchronizationButton);
-        gpsVideoSynchPanel.add(synchronizationDialogButton);
-    }
-
     private void addActionListeners() {
-        sourceVboFileChoose.addActionListener(this);
-        sourceVideoFileChoose.addActionListener(this);
         outputDirChoose.addActionListener(this);
         vboVideoIntegrate.addActionListener(this);
         clearAll.addActionListener(this);
         about.addActionListener(this);
-        resetSynchronizationButton.addActionListener(this);
-        synchronizationDialogButton.addActionListener(this);
-    }
-
-    private void chooseSourceVbo() {
-        final JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new FileNameExtensionFilter(
-                "VBox data files", "vbo"));
-
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            sourceVboFilePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-
-            try {
-                appendLog("GPS refresh rate is " + VboEditor.identifyGPSRefreshRate(sourceVboFilePath.getText()) + "HZ");
-            } catch (Exception e) {
-                // ignore at this stage
-            }
-        }
-    }
-
-    private void chooseSourceVideo() {
-        final JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new FileNameExtensionFilter(
-                "Video files", "mp4", "avi"));
-
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            sourceVideoFilePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-            try {
-                appendLog("Video file type is " + getVideoType());
-            } catch (Exception e) {
-                // ignore at this stage
-            }
-        }
     }
 
     private void chooseOutputDirectory() {
@@ -219,7 +112,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
     private VboEditor.VideoType getVideoType() {
         final String videoExtension;
-        final String videoFilePath = sourceVideoFilePath.getText();
+        final String videoFilePath = synchronizationPanel.getVideoFilePath();
         try {
             videoExtension = videoFilePath.substring(videoFilePath.lastIndexOf(".")).toLowerCase();
         } catch (StringIndexOutOfBoundsException e) {
@@ -241,9 +134,9 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
     private void showSynchronizationDialog() {
         final Frame parentFrame = this;
-        SwingUtilities.invokeLater(new Runnable() {
+        /*SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                final VideoTelemetrySynchronizer synchronizerDialog = new VideoTelemetrySynchronizer(parentFrame, true);
+                final SynchronizationPanel synchronizerDialog = new SynchronizationPanel(parentFrame, true);
                 synchronizerDialog.pack();
                 synchronizerDialog.setLocationRelativeTo(parentFrame);
                 synchronizerDialog.loadVideo(sourceVideoFilePath.getText());
@@ -267,16 +160,16 @@ final class VboEditorGUI extends JFrame implements ActionListener {
                     gpsDataOffsetMillis.setValue(millis);
                 }
             }
-        });
+        });*/
     }
 
     private void integrateGpsAndVideo() {
 
         try {
             final String outputDir = outputDirPath.getText();
-            final String vboFilePath = sourceVboFilePath.getText();
+            final String vboFilePath = synchronizationPanel.getTelemetryFilePath();
             final String sessionName = this.sessionName.getText();
-            final String videoFilePath = sourceVideoFilePath.getText();
+            final String videoFilePath = synchronizationPanel.getVideoFilePath();
 
             if (Strings.isNullOrEmpty(vboFilePath)) {
                 throw new IllegalStateException("Please select a valid vbo file");
@@ -293,9 +186,10 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
             final VboEditor.VideoType videoType = getVideoType();
 
-            final int gpsDataTotalOffsetMillis = getGpsDataTotalOffset();
+            final long gpsDataTotalOffsetMillis = synchronizationPanel.getOffset();
+            appendLog(String.format("Offeset is %s", gpsDataTotalOffsetMillis));
 
-            VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, gpsDataTotalOffsetMillis);
+            VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, (int) gpsDataTotalOffsetMillis);
             VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
 
             appendLog("Vbo and video files created under " + outputDir + "/" + sessionName);
@@ -308,18 +202,6 @@ final class VboEditorGUI extends JFrame implements ActionListener {
         }
     }
 
-    private int getGpsDataTotalOffset() {
-        // Start with positive number, indicating the GPS data start AFTER video
-        int gpsDataTotalOffsetMillis = (int) gpsDataOffsetMillis.getValue() +
-                1000 * (int) gpsDataOffsetSeconds.getValue() +
-                60 * 1000 * (int) gpsDataOffsetMinutes.getValue();
-        if (offsetType.getSelectedIndex() == 1) {
-            // GPS data starts BEFORE video
-            gpsDataTotalOffsetMillis = -gpsDataTotalOffsetMillis;
-        }
-        appendLog("Total gps data offset is " + gpsDataTotalOffsetMillis + "ms");
-        return gpsDataTotalOffsetMillis;
-    }
 
     private void appendLog(String log) {
         logText.append(log);
@@ -327,18 +209,10 @@ final class VboEditorGUI extends JFrame implements ActionListener {
     }
 
     private void clearAll() {
-        resetOffset();
-        sourceVideoFilePath.setText("");
-        sourceVboFilePath.setText("");
+        synchronizationPanel.clear();
         outputDirPath.setText("");
         sessionName.setText("");
         logText.setText("");
-    }
-
-    private void resetOffset() {
-        gpsDataOffsetMillis.setValue(0);
-        gpsDataOffsetSeconds.setValue(0);
-        gpsDataOffsetMinutes.setValue(0);
     }
 
     private void showAboutDialog() {
@@ -359,22 +233,14 @@ final class VboEditorGUI extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         final Object source = e.getSource();
 
-        if (source == sourceVboFileChoose) {
-            chooseSourceVbo();
-        } else if (source == sourceVideoFileChoose) {
-            chooseSourceVideo();
-        } else if (source == outputDirChoose) {
+        if (source == outputDirChoose) {
             chooseOutputDirectory();
         } else if (source == vboVideoIntegrate) {
             integrateGpsAndVideo();
-        } else if (source == resetSynchronizationButton) {
-            resetOffset();
         } else if (source == clearAll) {
             clearAll();
         } else if (source == about) {
             showAboutDialog();
-        } else if (source == synchronizationDialogButton) {
-            showSynchronizationDialog();
         }
     }
 

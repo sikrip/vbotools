@@ -1,7 +1,7 @@
 package org.sikrip.vboeditor.model;
 
 
-public class TraveledRouteXY {
+public class TraveledRoutePoint {
 
     private final int x;
     private final int y;
@@ -9,7 +9,7 @@ public class TraveledRouteXY {
     private final double speed;
 
 
-    public TraveledRouteXY(int x, int y, double time, double speed) {
+    public TraveledRoutePoint(int x, int y, double time, double speed) {
         this.x = x;
         this.y = y;
         this.time = time;
