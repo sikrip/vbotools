@@ -39,8 +39,11 @@ final class VideoPlayer implements ActionListener {
         // inits Java FX toolkit
         videoPanel = new JFXPanel();
 
+
         videoPlayerPanel = new JPanel(new BorderLayout());
+        //videoPlayerPanel.setBorder(BorderFactory.createTitledBorder("Video"));
         videoPlayerPanel.add(videoPanel, BorderLayout.CENTER);
+        videoPlayerPanel.setPreferredSize(new Dimension(width, height));
 
         final JPanel buttonsPanel = new JPanel();
         videoPlayerPanel.add(buttonsPanel, BorderLayout.SOUTH);

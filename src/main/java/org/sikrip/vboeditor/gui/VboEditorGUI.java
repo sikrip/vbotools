@@ -24,7 +24,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
     private final JPanel inputControlsPanel = new JPanel();
 
     private final JButton sourceVboFileChoose = new JButton("...");
-    private final JTextField sourceVboFilePath = new JTextField();
+    private final JTextField sourceVboFilePath = new JTextField("/home/sikripefg/sample-vbo-from-dbn.vbo");
 
     private final JButton sourceVideoFileChoose = new JButton("...");
     private final JTextField sourceVideoFilePath = new JTextField("/home/sikripefg/provlima-sasman.MP4");
@@ -247,6 +247,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
                 synchronizerDialog.pack();
                 synchronizerDialog.setLocationRelativeTo(parentFrame);
                 synchronizerDialog.loadVideo(sourceVideoFilePath.getText());
+                synchronizerDialog.loadTravelledRout(sourceVboFilePath.getText());
                 synchronizerDialog.setVisible(true);
             }
         });

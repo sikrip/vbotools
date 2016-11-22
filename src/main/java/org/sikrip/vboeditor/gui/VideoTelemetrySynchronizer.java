@@ -11,14 +11,18 @@ import java.awt.event.WindowEvent;
 final class VideoTelemetrySynchronizer extends JDialog implements ActionListener {
 
     private final VideoPlayer videoPlayer;
+    private final GPSViewer gpsViewer;
     private final JButton okButton;
     private final JButton cancelButton;
 
     public VideoTelemetrySynchronizer(Frame owner, boolean modal) {
         super(owner, modal);
 
-        videoPlayer = new VideoPlayer(550, 250);
         setTitle("Video / Telemetry Synchronization");
+
+        videoPlayer = new VideoPlayer(450, 250);
+
+        gpsViewer = new GPSViewer(350, 250);
 
         final JPanel buttonPanel = new JPanel();
         okButton = new JButton("OK");
@@ -30,9 +34,8 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
 
         final JPanel mainPanel = new JPanel(new BorderLayout());
 
-        JPanel panel = videoPlayer.getPanel();
-        panel.setMaximumSize(new Dimension(555, 290));
-        mainPanel.add(panel, BorderLayout.WEST);
+        mainPanel.add(videoPlayer.getPanel(), BorderLayout.WEST);
+        mainPanel.add(gpsViewer, BorderLayout.EAST);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         setContentPane(mainPanel);
@@ -50,6 +53,10 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
 
     void loadVideo(String videoFilePath){
         videoPlayer.loadVideo(videoFilePath);
+    }
+
+    void loadTravelledRout(String vboFilePath){
+        gpsViewer.loadTraveledRoute(vboFilePath);
     }
 
     @Override
