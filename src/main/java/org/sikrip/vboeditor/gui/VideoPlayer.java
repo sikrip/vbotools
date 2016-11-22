@@ -20,7 +20,7 @@ import java.net.MalformedURLException;
 final class VideoPlayer extends JPanel implements ActionListener {
 
     private final JButton fileChoose = new JButton("...");
-    private final JTextField filePath = new JTextField("/home/sikripefg/provlima-sasman.MP4");
+    private final JTextField filePath = new JTextField(/*"/home/sikripefg/provlima-sasman.MP4"*/);
 
     private final JFXPanel videoPanel;
 
@@ -77,7 +77,7 @@ final class VideoPlayer extends JPanel implements ActionListener {
         reset.addActionListener(this);
         southPanelPanel.add(reset);
 
-        enableSeekControls(true);
+        enableControls(false);
     }
 
     private void loadVideo() {
@@ -111,10 +111,6 @@ final class VideoPlayer extends JPanel implements ActionListener {
             playPause.setText("Pause");
             enableSeekControls(false);
         }
-    }
-
-    void dispose() {
-        mediaPlayer.dispose();
     }
 
     private void reset() {
@@ -158,13 +154,14 @@ final class VideoPlayer extends JPanel implements ActionListener {
                 "Video files", "mp4", "avi"));
 
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            fileChoose.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
             try {
                 //appendLog("Video file type is " + getVideoType());
             } catch (Exception e) {
                 // ignore at this stage
             }
             loadVideo();
+            enableControls(true);
         }
     }
 

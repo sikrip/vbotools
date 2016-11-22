@@ -30,7 +30,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
     private final JButton reset;
 
     private final JButton fileChoose = new JButton("...");
-    private final JTextField filePath = new JTextField("/home/sikripefg/sample-vbo-from-dbn.vbo");
+    private final JTextField filePath = new JTextField(/*"/home/sikripefg/sample-vbo-from-dbn.vbo"*/);
 
     private final AtomicBoolean playFlag = new AtomicBoolean(false);
 
@@ -83,6 +83,8 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         next2.addActionListener(this);
 
         add(southPanel, BorderLayout.SOUTH);
+
+        enableControls(false);
     }
 
     private void loadTraveledRoute() {
@@ -108,6 +110,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
                 // ignore at this stage
             }
             loadTraveledRoute();
+            enableControls(true);
         }
     }
 

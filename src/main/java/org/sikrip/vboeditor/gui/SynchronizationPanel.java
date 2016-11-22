@@ -14,19 +14,19 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
     private boolean playingBoth = false;
 
     public SynchronizationPanel() {
-
         setLayout(new BorderLayout());
 
         videoPlayer = new VideoPlayer();
         telemetryPlayer = new TelemetryPlayer();
 
+        final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, videoPlayer, telemetryPlayer);
+        add(splitPane, BorderLayout.CENTER);
+
+        final JPanel southPanel = new JPanel();
         playPauseBoth = new JButton("Play both");
         playPauseBoth.addActionListener(this);
-
-        final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, videoPlayer, telemetryPlayer);
-
-        add(splitPane, BorderLayout.CENTER);
-        add(playPauseBoth, BorderLayout.SOUTH);
+        southPanel.add(playPauseBoth);
+        add(southPanel, BorderLayout.SOUTH);
     }
 
     @Override
