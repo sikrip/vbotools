@@ -12,8 +12,11 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
 
     private final VideoPlayer videoPlayer;
     private final GPSViewer gpsViewer;
+    private final JButton playPauseBoth;
     private final JButton okButton;
     private final JButton cancelButton;
+    private boolean playingBoth = false;
+    private Double offset;
 
     public VideoTelemetrySynchronizer(Frame owner, boolean modal) {
         super(owner, modal);
@@ -22,13 +25,19 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
 
         videoPlayer = new VideoPlayer(450, 250);
 
-        gpsViewer = new GPSViewer(350, 250);
+        gpsViewer = new GPSViewer(450, 250);
 
         final JPanel buttonPanel = new JPanel();
-        okButton = new JButton("OK");
+        playPauseBoth = new JButton("Play both");
+        playPauseBoth.addActionListener(this);
+
+        okButton = new JButton("OK, video and telemetry is synchronized");
         okButton.addActionListener(this);
+
         cancelButton = new JButton("Cancel");
         cancelButton.addActionListener(this);
+
+        buttonPanel.add(playPauseBoth);
         buttonPanel.add(okButton);
         buttonPanel.add(cancelButton);
 
@@ -48,14 +57,14 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
             }
         });
         setResizable(false);
-        setPreferredSize(new Dimension(800, 300));
+        setPreferredSize(new Dimension(900, 300));
     }
 
-    void loadVideo(String videoFilePath){
+    void loadVideo(String videoFilePath) {
         videoPlayer.loadVideo(videoFilePath);
     }
 
-    void loadTravelledRout(String vboFilePath){
+    void loadTravelledRout(String vboFilePath) {
         gpsViewer.loadTraveledRoute(vboFilePath);
     }
 
@@ -66,15 +75,38 @@ final class VideoTelemetrySynchronizer extends JDialog implements ActionListener
             acceptSynchronization();
         } else if (source == cancelButton) {
             cancelSynchronization();
+        } else if (source == playPauseBoth) {
+            playPauseAll();
+        }
+    }
+
+    private void playPauseAll() {
+        videoPlayer.playPause();
+        gpsViewer.playPause();
+        playingBoth = !playingBoth;
+
+        if (playingBoth) {
+            playPauseBoth.setText("Pause both");
+            gpsViewer.enableControls(false);
+            videoPlayer.enableControls(false);
+            okButton.setEnabled(false);
+            cancelButton.setEnabled(false);
+        } else {
+            playPauseBoth.setText("Play both");
+            gpsViewer.enableControls(true);
+            videoPlayer.enableControls(true);
+            okButton.setEnabled(true);
+            cancelButton.setEnabled(true);
         }
     }
 
     private void cancelSynchronization() {
+        offset = null;
         closeWindow();
-
     }
 
     private void acceptSynchronization() {
+        offset = gpsViewer.getCurrentTime() - videoPlayer.getCurrentTime();
         closeWindow();
     }
 

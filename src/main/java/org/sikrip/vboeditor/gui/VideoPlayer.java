@@ -48,29 +48,30 @@ final class VideoPlayer implements ActionListener {
         final JPanel buttonsPanel = new JPanel();
         videoPlayerPanel.add(buttonsPanel, BorderLayout.SOUTH);
 
+
+        bw100 = new JButton("<<");
+        bw100.addActionListener(this);
+        buttonsPanel.add(bw100);
+
+        bw50 = new JButton("<");
+        bw50.addActionListener(this);
+        buttonsPanel.add(bw50);
+
         playPause = new JButton("Play");
         playPause.addActionListener(this);
         buttonsPanel.add(playPause);
 
-        stop = new JButton("Stop");
-        stop.addActionListener(this);
-        buttonsPanel.add(stop);
-
-        bw100 = new JButton("-100ms");
-        bw100.addActionListener(this);
-        buttonsPanel.add(bw100);
-
-        bw50 = new JButton("-50ms");
-        bw50.addActionListener(this);
-        buttonsPanel.add(bw50);
-
-        fw50 = new JButton("+50ms");
+        fw50 = new JButton(">");
         fw50.addActionListener(this);
         buttonsPanel.add(fw50);
 
-        fw100 = new JButton("+100ms");
+        fw100 = new JButton(">>");
         fw100.addActionListener(this);
         buttonsPanel.add(fw100);
+
+        stop = new JButton("Stop");
+        stop.addActionListener(this);
+        buttonsPanel.add(stop);
 
         enableSeekControls(true);
     }
@@ -110,11 +111,11 @@ final class VideoPlayer implements ActionListener {
         }
     }
 
-    void dispose(){
+    void dispose() {
         mediaPlayer.dispose();
     }
 
-    private void stop(){
+    private void stop() {
         mediaPlayer.stop();
         playPause.setText("Play");
         enableSeekControls(true);
@@ -125,6 +126,16 @@ final class VideoPlayer implements ActionListener {
         fw100.setEnabled(enable);
         bw50.setEnabled(enable);
         bw100.setEnabled(enable);
+    }
+
+    void enableControls(boolean enable) {
+        enableSeekControls(enable);
+        stop.setEnabled(enable);
+        playPause.setEnabled(enable);
+    }
+
+    double getCurrentTime() {
+        return mediaPlayer.getCurrentTime().toMillis();
     }
 
     private void seek(double durationMillis) {

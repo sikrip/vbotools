@@ -13,6 +13,7 @@ import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class GPSViewer extends JPanel implements ActionListener {
 
@@ -21,8 +22,21 @@ final class GPSViewer extends JPanel implements ActionListener {
 
     private final int width;
     private final int height;
+    private final JButton prev2;
+    private final JButton prev;
     private final JButton next;
+    private final JButton next2;
+    private final JButton playPause;
+    private final JButton stop;
+    private final JLabel speed;
+
+    private final AtomicBoolean playFlag = new AtomicBoolean(false);
+
+    // TODO detect interval from vbo file
+    private final long interval = 100; //ms
+
     private final TraveledRoutePanel traveledRoutePanel;
+
 
     private int currentPositionIdx = 0;
     private final List<TraveledRouteXY> traveledRoutePoints = new ArrayList<>();
@@ -38,10 +52,29 @@ final class GPSViewer extends JPanel implements ActionListener {
 
         final JPanel buttonsPanel = new JPanel();
 
+        prev2 = new JButton("<<");
+        prev = new JButton("<");
         next = new JButton(">");
-        buttonsPanel.add(next);
-        next.addActionListener(this);
+        next2 = new JButton(">>");
+        stop = new JButton("Stop");
+        playPause = new JButton("Play");
+        speed = new JLabel();
 
+        buttonsPanel.add(prev2);
+        buttonsPanel.add(prev);
+        buttonsPanel.add(playPause);
+        buttonsPanel.add(next);
+        buttonsPanel.add(next2);
+        buttonsPanel.add(stop);
+
+        prev2.addActionListener(this);
+        prev.addActionListener(this);
+        playPause.addActionListener(this);
+        stop.addActionListener(this);
+        next.addActionListener(this);
+        next2.addActionListener(this);
+
+        add(speed, BorderLayout.NORTH);
         add(buttonsPanel, BorderLayout.SOUTH);
     }
 
@@ -52,8 +85,8 @@ final class GPSViewer extends JPanel implements ActionListener {
     public void loadTraveledRoute(String vboFilePath) {
         try {
             createRoutePoints(VboEditor.getTraveledRoute(vboFilePath));
+            speed.setText("Speed:" + traveledRoutePoints.get(currentPositionIdx).getSpeed());
             repaint();
-            invalidate();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -62,17 +95,92 @@ final class GPSViewer extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         final Object source = e.getSource();
-        if (source == next) {
-            next();
+
+        if (source == prev2) {
+            seek(-2);
+        } else if (source == prev) {
+            seek(-1);
+        } else if (source == playPause) {
+            playPause();
+        } else if (source == stop) {
+            stop();
+        } else if (source == next) {
+            seek(1);
+        } else if (source == next2) {
+            seek(2);
         }
     }
 
-    private void next() {
-        currentPositionIdx++;
+    private void stop() {
+        playFlag.set(false);
+        currentPositionIdx = 0;
+        playPause.setText("Play");
+        enableScanControls(true);
         repaint();
-        invalidate();
     }
 
+    private void enableScanControls(boolean enable) {
+        prev.setEnabled(enable);
+        prev2.setEnabled(enable);
+        next.setEnabled(enable);
+        next2.setEnabled(enable);
+    }
+
+    void enableControls(boolean enable) {
+        enableScanControls(enable);
+        stop.setEnabled(enable);
+        playPause.setEnabled(enable);
+    }
+
+    double getCurrentTime() {
+        return currentPositionIdx * interval;
+    }
+
+    void playPause() {
+        if (playFlag.get()) {
+            playPause.setText("Play");
+            enableScanControls(true);
+            playFlag.set(false);
+        } else {
+            playPause.setText("Pause");
+            enableScanControls(false);
+            playFlag.set(true);
+            final Thread playThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (currentPositionIdx < traveledRoutePoints.size()) {
+                        if (playFlag.get()) {
+                            seek(1);
+                            try {
+                                Thread.sleep(interval);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            });
+            playThread.start();
+        }
+    }
+
+    public boolean isPlaying() {
+        return playFlag.get();
+    }
+
+    private void seek(int amout) {
+        currentPositionIdx += amout;
+        if (currentPositionIdx < 0) {
+            currentPositionIdx = 0;
+        } else if (currentPositionIdx >= traveledRoutePoints.size()) {
+            currentPositionIdx = traveledRoutePoints.size() - 1;
+        }
+
+        speed.setText("Speed:" + traveledRoutePoints.get(currentPositionIdx).getSpeed());
+        repaint();
+    }
 
     private void createRoutePoints(final List<TraveledRouteCoordinate> traveledRouteCoordinates) {
         final Dimension size = getSize();
@@ -147,7 +255,6 @@ final class GPSViewer extends JPanel implements ActionListener {
             int adjustedY = (int) (actualHeight - heightPadding - (point.getY() * globalRatio));
 
             traveledRoutePoints.add(new TraveledRouteXY(adjustedX, adjustedY, coordinate.getTime(), coordinate.getSpeed()));
-
         }
     }
 
@@ -171,6 +278,5 @@ final class GPSViewer extends JPanel implements ActionListener {
                     CURRENT_POSITION_MARKER_SIZE, CURRENT_POSITION_MARKER_SIZE);
         }
     }
-
 
 }
