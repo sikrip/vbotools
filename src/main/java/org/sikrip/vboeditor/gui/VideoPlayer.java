@@ -23,6 +23,7 @@ final class VideoPlayer extends JPanel implements ActionListener {
     private final JTextField filePath = new JTextField(/*"/home/sikripefg/provlima-sasman.MP4"*/);
 
     private final JFXPanel videoPanel;
+    private final JPanel controlsPanel = new JPanel();
 
     private MediaPlayer mediaPlayer;
     private final JButton playPause;
@@ -51,31 +52,31 @@ final class VideoPlayer extends JPanel implements ActionListener {
         fileChoose.addActionListener(this);
         add(northPanel, BorderLayout.NORTH);
 
-        final JPanel southPanelPanel = new JPanel();
-        add(southPanelPanel, BorderLayout.SOUTH);
+
+        add(controlsPanel, BorderLayout.SOUTH);
         bw100 = new JButton("<<");
         bw100.addActionListener(this);
-        southPanelPanel.add(bw100);
+        controlsPanel.add(bw100);
 
         bw50 = new JButton("<");
         bw50.addActionListener(this);
-        southPanelPanel.add(bw50);
+        controlsPanel.add(bw50);
 
         playPause = new JButton("Play");
         playPause.addActionListener(this);
-        southPanelPanel.add(playPause);
+        controlsPanel.add(playPause);
 
         fw50 = new JButton(">");
         fw50.addActionListener(this);
-        southPanelPanel.add(fw50);
+        controlsPanel.add(fw50);
 
         fw100 = new JButton(">>");
         fw100.addActionListener(this);
-        southPanelPanel.add(fw100);
+        controlsPanel.add(fw100);
 
         reset = new JButton("Reset");
         reset.addActionListener(this);
-        southPanelPanel.add(reset);
+        controlsPanel.add(reset);
 
         enableControls(false);
     }
@@ -126,10 +127,14 @@ final class VideoPlayer extends JPanel implements ActionListener {
         bw100.setEnabled(enable);
     }
 
-    void enableControls(boolean enable) {
+    private void enableControls(boolean enable) {
         enableSeekControls(enable);
         reset.setEnabled(enable);
         playPause.setEnabled(enable);
+    }
+
+    void showControls(boolean show){
+        controlsPanel.setVisible(show);
     }
 
     long getCurrentTime() {
@@ -140,7 +145,7 @@ final class VideoPlayer extends JPanel implements ActionListener {
         return filePath.getText();
     }
 
-    private void seek(double durationMillis) {
+    void seek(double durationMillis) {
         if (durationMillis < 0) {
             mediaPlayer.seek(mediaPlayer.getCurrentTime().subtract(new Duration(Math.abs(durationMillis))));
         } else {

@@ -38,6 +38,8 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
 
     private final TraveledRoutePanel traveledRoutePanel;
 
+    private final JPanel controlsPanel = new JPanel();
+
 
     private int currentPositionIdx = 0;
     private final List<TraveledRoutePoint> traveledRoutePoints = new ArrayList<>();
@@ -59,8 +61,6 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
 
         fileChoose.addActionListener(this);
 
-        final JPanel southPanel = new JPanel();
-
         prev2 = new JButton("<<");
         prev = new JButton("<");
         next = new JButton(">");
@@ -68,12 +68,12 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         reset = new JButton("Reset");
         playPause = new JButton("Play");
 
-        southPanel.add(prev2);
-        southPanel.add(prev);
-        southPanel.add(playPause);
-        southPanel.add(next);
-        southPanel.add(next2);
-        southPanel.add(reset);
+        controlsPanel.add(prev2);
+        controlsPanel.add(prev);
+        controlsPanel.add(playPause);
+        controlsPanel.add(next);
+        controlsPanel.add(next2);
+        controlsPanel.add(reset);
 
         prev2.addActionListener(this);
         prev.addActionListener(this);
@@ -82,7 +82,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         next.addActionListener(this);
         next2.addActionListener(this);
 
-        add(southPanel, BorderLayout.SOUTH);
+        add(controlsPanel, BorderLayout.SOUTH);
 
         enableControls(false);
     }
@@ -150,10 +150,14 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         next2.setEnabled(enable);
     }
 
-    void enableControls(boolean enable) {
+    private void enableControls(boolean enable) {
         enableScanControls(enable);
         reset.setEnabled(enable);
         playPause.setEnabled(enable);
+    }
+
+    void showControls(boolean show){
+        controlsPanel.setVisible(show);
     }
 
     long getCurrentTime() {
@@ -194,7 +198,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         }
     }
 
-    private void seek(int amount) {
+    void seek(int amount) {
         currentPositionIdx += amount;
         if (currentPositionIdx < 0) {
             currentPositionIdx = 0;

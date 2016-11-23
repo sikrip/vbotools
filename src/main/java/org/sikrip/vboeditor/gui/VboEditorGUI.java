@@ -1,15 +1,12 @@
 package org.sikrip.vboeditor.gui;
 
+import com.google.common.base.Strings;
+import org.sikrip.vboeditor.VboEditor;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
-import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
-import org.sikrip.vboeditor.VboEditor;
-
-import com.google.common.base.Strings;
 
 final class VboEditorGUI extends JFrame implements ActionListener {
 
@@ -19,84 +16,86 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
     private final JPanel mainPanel = new JPanel(new BorderLayout());
 
-    private final JPanel inputControlsPanel = new JPanel();
-
     private final JButton outputDirChoose = new JButton("...");
     private final JTextField outputDirPath = new JTextField();
 
     private final JTextField sessionName = new JTextField();
 
-    private final SynchronizationPanel synchronizationPanel = new SynchronizationPanel();
+    private final SynchronizationPanel synchronizationPanel;
 
-    private final JPanel actionControlsPanel = new JPanel();
 
-    private final JTextArea logText = new JTextArea();
-    private final JButton vboVideoIntegrate = new JButton("Integrate telemetry / video data");
+    private final JButton performIntegration = new JButton("Integrate telemetry / video data");
     private final JButton clearAll = new JButton("Clear all");
     private final JButton about = new JButton("About");
 
-    private void createGui() {
-        createInputControlsPanel();
-        createActionControlsPanel();
+    private final JTextArea logText = new JTextArea();
 
+    public VboEditorGUI() throws HeadlessException {
+        this.synchronizationPanel = new SynchronizationPanel(this);
+    }
+
+    void enableIntegrationAction(boolean enable) {
+        performIntegration.setEnabled(enable);
+    }
+
+    private void createGui() {
         mainPanel.setPreferredSize(new Dimension(800, 600));
-        mainPanel.add(inputControlsPanel, BorderLayout.NORTH);
         mainPanel.add(synchronizationPanel, BorderLayout.CENTER);
-        mainPanel.add(actionControlsPanel, BorderLayout.SOUTH);
+        mainPanel.add(createSouthPanel(), BorderLayout.SOUTH);
 
         setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
         setContentPane(mainPanel);
     }
 
-    private void createInputControlsPanel() {
-        inputControlsPanel.setLayout(new BoxLayout(inputControlsPanel, BoxLayout.LINE_AXIS));
+    private JPanel createSouthPanel() {
 
-        JLabel label;
+        final JPanel southPanel = new JPanel(new BorderLayout());
 
-        label = new JLabel("Output folder");
-        inputControlsPanel.add(label);
-        inputControlsPanel.add(outputDirPath);
-        inputControlsPanel.add(outputDirChoose);
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
+        JLabel label = new JLabel("Output folder");
+        panel.add(label);
+        panel.add(outputDirPath);
+        panel.add(outputDirChoose);
 
         String toolTipText = "Select a folder to place the result files.";
         label.setToolTipText(toolTipText);
         outputDirPath.setToolTipText(toolTipText);
         outputDirChoose.setToolTipText(toolTipText);
 
-        inputControlsPanel.add(Box.createRigidArea(new Dimension(5, 0)));
+        panel.add(Box.createRigidArea(new Dimension(5, 0)));
 
         label = new JLabel("Session Name");
         sessionName.setToolTipText(toolTipText);
-        inputControlsPanel.add(label);
-        inputControlsPanel.add(sessionName);
+        panel.add(label);
+        panel.add(sessionName);
 
         toolTipText = "<html>Select a name for the session of the .vbo and video data. "
                 + "A folder with this name will be created under the output directory " +
                 "and will contain the final .vbo and video files.</html>";
         label.setToolTipText(toolTipText);
         sessionName.setToolTipText(toolTipText);
-    }
+        southPanel.add(panel, BorderLayout.NORTH);
 
-    private void createActionControlsPanel() {
-        actionControlsPanel.setLayout(new BorderLayout());
-        actionControlsPanel.setBorder(BorderFactory.createEtchedBorder());
+        panel = new JPanel();
+        panel.add(performIntegration);
+        performIntegration.setEnabled(false);
+        panel.add(clearAll);
+        panel.add(about);
+        southPanel.add(panel, BorderLayout.CENTER);
 
         logText.setEditable(false);
         final JScrollPane logScroll = new JScrollPane(logText);
         logScroll.setPreferredSize(new Dimension(600, 100));
         logScroll.setBorder(BorderFactory.createTitledBorder("Log"));
-        actionControlsPanel.add(logScroll, BorderLayout.CENTER);
+        southPanel.add(logScroll, BorderLayout.SOUTH);
 
-        final JPanel panel = new JPanel();
-        panel.add(vboVideoIntegrate);
-        panel.add(clearAll);
-        panel.add(about);
-        actionControlsPanel.add(panel, BorderLayout.NORTH);
+        return southPanel;
     }
 
     private void addActionListeners() {
         outputDirChoose.addActionListener(this);
-        vboVideoIntegrate.addActionListener(this);
+        performIntegration.addActionListener(this);
         clearAll.addActionListener(this);
         about.addActionListener(this);
     }
@@ -132,40 +131,11 @@ final class VboEditorGUI extends JFrame implements ActionListener {
         return videoType;
     }
 
-    private void showSynchronizationDialog() {
-        final Frame parentFrame = this;
-        /*SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                final SynchronizationPanel synchronizerDialog = new SynchronizationPanel(parentFrame, true);
-                synchronizerDialog.pack();
-                synchronizerDialog.setLocationRelativeTo(parentFrame);
-                synchronizerDialog.loadVideo(sourceVideoFilePath.getText());
-                synchronizerDialog.loadTravelledRout(sourceVboFilePath.getText());
-                synchronizerDialog.setVisible(true);
-
-                Long offset = synchronizerDialog.getOffset();//ms
-                if (offset != null) {
-
-                    // Positive offset indicates that gps data start after video
-                    offsetType.setSelectedIndex(offset >= 0 ? 0 : 1);
-
-                    offset = Math.abs(offset);
-
-                    long minutes = offset / (1000 * 60);
-                    long seconds = offset / 1000;
-                    long millis = offset - (minutes * 1000 * 60) - (seconds * 1000);
-
-                    gpsDataOffsetMinutes.setValue(minutes);
-                    gpsDataOffsetSeconds.setValue(seconds);
-                    gpsDataOffsetMillis.setValue(millis);
-                }
-            }
-        });*/
-    }
-
     private void integrateGpsAndVideo() {
 
         try {
+            synchronizationPanel.forcePause();
+
             final String outputDir = outputDirPath.getText();
             final String vboFilePath = synchronizationPanel.getTelemetryFilePath();
             final String sessionName = this.sessionName.getText();
@@ -235,7 +205,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
         if (source == outputDirChoose) {
             chooseOutputDirectory();
-        } else if (source == vboVideoIntegrate) {
+        } else if (source == performIntegration) {
             integrateGpsAndVideo();
         } else if (source == clearAll) {
             clearAll();
