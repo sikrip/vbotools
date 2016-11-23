@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 final class VboEditorGUI extends JFrame implements ActionListener {
 
@@ -15,6 +16,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
     private static final String APP_TITLE = "Telemetry and Video data integrator";
 
     private final JPanel mainPanel = new JPanel(new BorderLayout());
+    private final JDialog waitDialog;
 
     private final JButton outputDirChoose = new JButton("...");
     private final JTextField outputDirPath = new JTextField();
@@ -32,6 +34,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
     public VboEditorGUI() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
+        waitDialog = new JDialog(this);
     }
 
     void enableIntegrationAction(boolean enable) {
@@ -39,12 +42,15 @@ final class VboEditorGUI extends JFrame implements ActionListener {
     }
 
     private void createGui() {
+
+        waitDialog.getContentPane().add(new JLabel("<html><h2>Working, please wait...</h2></html>"));
+
         mainPanel.setPreferredSize(new Dimension(800, 600));
         mainPanel.add(synchronizationPanel, BorderLayout.CENTER);
         mainPanel.add(createSouthPanel(), BorderLayout.SOUTH);
 
         setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
-        setContentPane(mainPanel);
+        getContentPane().add(mainPanel);
     }
 
     private JPanel createSouthPanel() {
@@ -157,21 +163,42 @@ final class VboEditorGUI extends JFrame implements ActionListener {
             final VboEditor.VideoType videoType = getVideoType();
 
             final long gpsDataTotalOffsetMillis = synchronizationPanel.getOffset();
-            appendLog(String.format("Offeset is %s", gpsDataTotalOffsetMillis));
+            appendLog(String.format("Offset is %s", gpsDataTotalOffsetMillis));
 
-            VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, (int) gpsDataTotalOffsetMillis);
-            VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
 
-            appendLog("Vbo and video files created under " + outputDir + "/" + sessionName);
-            appendLog("\n");
+            final Component messageDialogParent = this;
+            waitDialog.setUndecorated(true);
+            waitDialog.pack();
+            waitDialog.setLocationRelativeTo(this);
+            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() {
+                    try {
+                        VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, (int) gpsDataTotalOffsetMillis);
+                        VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
+                    } catch (IOException e) {
+                        JOptionPane.showMessageDialog(messageDialogParent, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
+                    }
 
-            JOptionPane.showMessageDialog(this,
-                    "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
+                    appendLog("Vbo and video files created under " + outputDir + "/" + sessionName);
+                    appendLog("\n");
+                    JOptionPane.showMessageDialog(messageDialogParent,
+                            "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
+
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    waitDialog.dispose();
+                }
+            };
+            waitDialog.setVisible(true);
+            worker.execute();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Could not integrate data", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
         }
     }
-
 
     private void appendLog(String log) {
         logText.append(log);
