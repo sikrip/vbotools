@@ -6,75 +6,85 @@ import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
 import org.sikrip.vboeditor.model.TraveledRoutePoint;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-final class TelemetryPlayer extends JPanel implements ActionListener {
+final class TelemetryPlayer extends JPanel implements ActionListener, ChangeListener {
 
     private static final int MINIMUM_IMAGE_PADDING_IN_PX = 50;
     public static final int CURRENT_POSITION_MARKER_SIZE = 8;
 
-    private final JButton prev2;
-    private final JButton prev;
-    private final JButton next;
-    private final JButton next2;
-    private final JButton playPause;
-    private final JButton reset;
-
     private final JButton fileChoose = new JButton("...");
     private final JTextField filePath = new JTextField(/*"/home/sikripefg/sample-vbo-from-dbn.vbo"*/);
 
-    private final AtomicBoolean playFlag = new AtomicBoolean(false);
-
-    private long gpsDataIntervalMillis;
-
     private final TraveledRoutePanel traveledRoutePanel;
 
-    private final JPanel controlsPanel = new JPanel();
+    private final JPanel controlsPanel = new JPanel(new BorderLayout());
+    private final JButton prev2 = new JButton("<<");
+    private final JButton prev = new JButton("<");
+    private final JButton next = new JButton(">");
+    private final JButton next2 = new JButton(">>");
+    private final JButton playPause = new JButton("Play");
+    private final JButton reset = new JButton("Reset");
+    private final JSlider seekSlider = new JSlider();
 
-
+    private final AtomicBoolean playFlag = new AtomicBoolean(false);
+    private long gpsDataIntervalMillis;
     private int currentPositionIdx = 0;
     private final List<TraveledRoutePoint> traveledRoutePoints = new ArrayList<>();
     private double startTime;
 
     public TelemetryPlayer() {
+
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Telemetry"));
 
-        traveledRoutePanel = new TraveledRoutePanel();
+        add(createFileInputPanel(), BorderLayout.NORTH);
 
+        traveledRoutePanel = new TraveledRoutePanel();
         add(traveledRoutePanel, BorderLayout.CENTER);
 
-        final JPanel northPanel = new JPanel();
-        northPanel.setLayout(new BoxLayout(northPanel, BoxLayout.LINE_AXIS));
-        northPanel.add(filePath);
-        northPanel.add(fileChoose);
+        createControlsPanel();
+        add(controlsPanel, BorderLayout.SOUTH);
+
+        enableControls(false);
+    }
+
+    private JPanel createFileInputPanel() {
+        final JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
+        panel.add(filePath);
+        panel.add(fileChoose);
         fileChoose.setToolTipText("Select a .vbo file that do not contain any video related data.");
-        add(northPanel, BorderLayout.NORTH);
-
         fileChoose.addActionListener(this);
+        return panel;
+    }
 
-        prev2 = new JButton("<<");
-        prev = new JButton("<");
-        next = new JButton(">");
-        next2 = new JButton(">>");
-        reset = new JButton("Reset");
-        playPause = new JButton("Play");
+    private void createControlsPanel() {
 
-        controlsPanel.add(prev2);
-        controlsPanel.add(prev);
-        controlsPanel.add(playPause);
-        controlsPanel.add(next);
-        controlsPanel.add(next2);
-        controlsPanel.add(reset);
+        final JPanel panel = new JPanel();
+
+        panel.add(prev2);
+        panel.add(prev);
+        panel.add(playPause);
+        panel.add(next);
+        panel.add(next2);
+        panel.add(reset);
+
+        controlsPanel.add(panel, BorderLayout.CENTER);
+
+        seekSlider.setValue(0);
+        controlsPanel.add(seekSlider, BorderLayout.NORTH);
 
         prev2.addActionListener(this);
         prev.addActionListener(this);
@@ -82,22 +92,19 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         reset.addActionListener(this);
         next.addActionListener(this);
         next2.addActionListener(this);
-
-        add(controlsPanel, BorderLayout.SOUTH);
-
-        enableControls(false);
+        seekSlider.addChangeListener(this);
     }
 
-    private void loadTraveledRoute() {
+    private void paintTraveledRoute() {
         try {
-            createRoutePoints(VboEditor.getTraveledRoute(filePath.getText()));
-            repaint();
-        } catch (IOException e) {
-            e.printStackTrace();
+            calculateTraveledRoute(VboEditor.getTraveledRoute(filePath.getText()));
+            traveledRoutePanel.repaint();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot draw traveled route", e);
         }
     }
 
-    private void chooseSourceVbo() {
+    private void loadTelemetry() {
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new FileNameExtensionFilter(
                 "VBox data files", "vbo"));
@@ -110,9 +117,21 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
             } catch (Exception e) {
                 // ignore at this stage
             }
-            loadTraveledRoute();
+            paintTraveledRoute();
+            setupSlider();
             enableControls(true);
         }
+    }
+
+    private void setupSlider() {
+        seekSlider.setMinimum(0);
+        seekSlider.setMaximum(traveledRoutePoints.size() - 1);
+        seekSlider.setValue(0);
+        Hashtable<Integer, JComponent> labelTable = new Hashtable<>();
+        labelTable.put(0, new JLabel("0"));
+        labelTable.put(seekSlider.getMaximum(), new JLabel(getTime(traveledRoutePoints.size() - 1)));
+        seekSlider.setLabelTable(labelTable);
+        seekSlider.setPaintLabels(true);
     }
 
     @Override
@@ -132,7 +151,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         } else if (source == next2) {
             seek(2);
         } else if (source == fileChoose) {
-            chooseSourceVbo();
+            loadTelemetry();
         }
     }
 
@@ -140,8 +159,9 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         playFlag.set(false);
         currentPositionIdx = 0;
         playPause.setText("Play");
+        seekSlider.setValue(currentPositionIdx);
+        traveledRoutePanel.repaint();
         enableScanControls(true);
-        repaint();
     }
 
     private void enableScanControls(boolean enable) {
@@ -149,6 +169,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         prev2.setEnabled(enable);
         next.setEnabled(enable);
         next2.setEnabled(enable);
+        seekSlider.setEnabled(enable);
     }
 
     private void enableControls(boolean enable) {
@@ -214,10 +235,21 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         } else if (currentPositionIdx >= traveledRoutePoints.size()) {
             currentPositionIdx = traveledRoutePoints.size() - 1;
         }
-        repaint();
+        seekSlider.setValue(currentPositionIdx);
+        traveledRoutePanel.repaint();
     }
 
-    private void createRoutePoints(final List<TraveledRouteCoordinate> traveledRouteCoordinates) {
+    private void goTo(int position) {
+        currentPositionIdx = position;
+        if (currentPositionIdx < 0) {
+            currentPositionIdx = 0;
+        } else if (currentPositionIdx >= traveledRoutePoints.size()) {
+            currentPositionIdx = traveledRoutePoints.size() - 1;
+        }
+        traveledRoutePanel.repaint();
+    }
+
+    private void calculateTraveledRoute(final List<TraveledRouteCoordinate> traveledRouteCoordinates) {
         if (traveledRouteCoordinates.isEmpty()) {
             throw new RuntimeException("Cannot read travelled route");
         }
@@ -299,6 +331,20 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         startTime = traveledRouteCoordinates.get(0).getTime();
     }
 
+    private String getTime(int position) {
+        final long timeMillis = (long) (traveledRoutePoints.get(position).getTime() * 1000 - startTime * 1000);
+
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(timeMillis);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(timeMillis) - TimeUnit.MINUTES.toSeconds(minutes);
+        long millis = timeMillis - TimeUnit.SECONDS.toMillis(seconds) - TimeUnit.MINUTES.toMillis(minutes);
+        return String.format("%02d:%02d.%03d", minutes, seconds, millis);
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        goTo(seekSlider.getValue());
+    }
+
     private class TraveledRoutePanel extends JPanel {
 
         @Override
@@ -321,21 +367,12 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
 
                 g.setColor(Color.BLUE);
                 g.drawString(getSpeed(), 5, 25);
-                g.drawString(getTime(), 5, 50);
+                g.drawString("Time: " + getTime(currentPositionIdx), 5, 50);
             }
         }
 
         private String getSpeed() {
             return "Speed: " + traveledRoutePoints.get(currentPositionIdx).getSpeed();
-        }
-
-        private String getTime() {
-            final long timeMillis = (long) (traveledRoutePoints.get(currentPositionIdx).getTime() * 1000 - startTime * 1000);
-
-            long minutes = TimeUnit.MILLISECONDS.toMinutes(timeMillis);
-            long seconds = TimeUnit.MILLISECONDS.toSeconds(timeMillis) - TimeUnit.MINUTES.toSeconds(minutes);
-            long millis = timeMillis - TimeUnit.SECONDS.toMillis(seconds) - TimeUnit.MINUTES.toMillis(minutes);
-            return String.format("Time: %02d:%02d.%03d", minutes, seconds, millis);
         }
     }
 
