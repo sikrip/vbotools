@@ -25,7 +25,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     public static final int CURRENT_POSITION_MARKER_SIZE = 8;
 
     private final JButton fileChoose = new JButton("...");
-    private final JTextField filePath = new JTextField(/*"/home/sikripefg/sample-vbo-from-dbn.vbo"*/);
+    private final JTextField filePath = new JTextField();
 
     private final TraveledRoutePanel traveledRoutePanel;
 

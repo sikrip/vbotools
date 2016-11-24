@@ -20,7 +20,7 @@ import java.net.MalformedURLException;
 final class VideoPlayer extends JPanel implements ActionListener {
 
     private final JButton fileChoose = new JButton("...");
-    private final JTextField filePath = new JTextField(/*"/home/sikripefg/provlima-sasman.MP4"*/);
+    private final JTextField filePath = new JTextField();
 
     private final JFXPanel videoPanel;
     private final JPanel controlsPanel = new JPanel();
