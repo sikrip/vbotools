@@ -206,12 +206,12 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         final String aboutMessage = "<html>" +
                 "<h2>" + APP_TITLE + "</h2>" +
                 "<h2> Version " + VERSION_TAG + "</h2>" +
-                "<h4>A little tool that can help you synch and integrate GPS and Video data so you can do video analysis on Circuit Tools!</h4>" +
+                "<h4>A little tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</h4>" +
                 "<p>Author George Sikalias (sikrip)</p>" +
                 "<p>Contact Info: " +
                 "sikrip@gmail.com, " +
                 "facebook.com/sikrip, " +
-                "@sikrip on twitter</p>" +
+                "twitter @sikrip</p>" +
                 "</html>";
         JOptionPane.showMessageDialog(this, aboutMessage, "About this software", JOptionPane.INFORMATION_MESSAGE);
     }
