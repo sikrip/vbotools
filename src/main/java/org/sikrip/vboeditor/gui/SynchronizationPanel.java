@@ -127,17 +127,17 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
         } else if (source == playPauseAll) {
             playPause();
         } else if (source == prev2) {
-            videoPlayer.seek(-100);
-            telemetryPlayer.seek(-2);
+            videoPlayer.step(-100);
+            telemetryPlayer.step(-2);
         } else if (source == prev) {
-            videoPlayer.seek(-50);
-            telemetryPlayer.seek(-1);
+            videoPlayer.step(-50);
+            telemetryPlayer.step(-1);
         } else if (source == next) {
-            videoPlayer.seek(50);
-            telemetryPlayer.seek(1);
+            videoPlayer.step(50);
+            telemetryPlayer.step(1);
         } else if (source == next2) {
-            videoPlayer.seek(100);
-            telemetryPlayer.seek(2);
+            videoPlayer.step(100);
+            telemetryPlayer.step(2);
         }
     }
 }

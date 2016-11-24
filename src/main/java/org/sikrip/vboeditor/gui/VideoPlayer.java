@@ -1,5 +1,7 @@
 package org.sikrip.vboeditor.gui;
 
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -7,32 +9,37 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.util.Duration;
+import org.sikrip.vboeditor.helper.TimeHelper;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.MalformedURLException;
+import java.util.Hashtable;
 
 
-final class VideoPlayer extends JPanel implements ActionListener {
+final class VideoPlayer extends JPanel implements ActionListener, ChangeListener {
 
     private final JButton fileChoose = new JButton("...");
     private final JTextField filePath = new JTextField();
 
-    private final JFXPanel videoPanel;
-    private final JPanel controlsPanel = new JPanel();
-
     private MediaPlayer mediaPlayer;
-    private final JButton playPause;
-    private final JButton reset;
+    private final JFXPanel videoPanel;
 
-    private final JButton fw50;
-    private final JButton fw100;
-    private final JButton bw50;
-    private final JButton bw100;
+    private final JPanel controlsPanel = new JPanel(new BorderLayout());
+    private final JLabel timeLabel = new JLabel();
+    private final JSlider seekSlider = new JSlider();
+    private final JButton playPause = new JButton("Play");
+    private final JButton reset = new JButton("Reset");
+    private final JButton prev2 = new JButton("<<");
+    private final JButton prev = new JButton("<");
+    private final JButton next = new JButton(">");
+    private final JButton next2 = new JButton(">>");
 
     VideoPlayer() {
 
@@ -52,38 +59,39 @@ final class VideoPlayer extends JPanel implements ActionListener {
         fileChoose.addActionListener(this);
         add(northPanel, BorderLayout.NORTH);
 
-
+        createControlsPanel();
         add(controlsPanel, BorderLayout.SOUTH);
-        bw100 = new JButton("<<");
-        bw100.addActionListener(this);
-        controlsPanel.add(bw100);
 
-        bw50 = new JButton("<");
-        bw50.addActionListener(this);
-        controlsPanel.add(bw50);
-
-        playPause = new JButton("Play");
-        playPause.addActionListener(this);
-        controlsPanel.add(playPause);
-
-        fw50 = new JButton(">");
-        fw50.addActionListener(this);
-        controlsPanel.add(fw50);
-
-        fw100 = new JButton(">>");
-        fw100.addActionListener(this);
-        controlsPanel.add(fw100);
-
-        reset = new JButton("Reset");
-        reset.addActionListener(this);
-        controlsPanel.add(reset);
 
         enableControls(false);
     }
 
-    private void loadVideo() {
-        try {
+    private void createControlsPanel() {
 
+        final JPanel panel = new JPanel();
+
+        prev2.addActionListener(this);
+        panel.add(prev2);
+        prev.addActionListener(this);
+        panel.add(prev);
+        playPause.addActionListener(this);
+        panel.add(playPause);
+        next.addActionListener(this);
+        panel.add(next);
+        next2.addActionListener(this);
+        panel.add(next2);
+        reset.addActionListener(this);
+        panel.add(reset);
+
+        seekSlider.setValue(0);
+        seekSlider.addChangeListener(this);
+        controlsPanel.add(timeLabel, BorderLayout.NORTH);
+        controlsPanel.add(seekSlider, BorderLayout.CENTER);
+        controlsPanel.add(panel, BorderLayout.SOUTH);
+    }
+
+    private void loadVideoPanel() {
+        try {
             Dimension size = getSize();
             final File videoFile = new File(filePath.getText());
             final Media media = new Media(videoFile.toURI().toURL().toString());
@@ -95,10 +103,31 @@ final class VideoPlayer extends JPanel implements ActionListener {
             mediaView.setFitWidth(scene.getWidth());
             mediaView.setFitHeight(scene.getHeight());
 
+            mediaPlayer.currentTimeProperty().addListener(new InvalidationListener() {
+                @Override
+                public void invalidated(Observable observable) {
+                    timeLabel.setText("Time: " + TimeHelper.getTimeString((long) mediaPlayer.getCurrentTime().toMillis()));
+                }
+            });
+
         } catch (MalformedURLException e) {
-            // TODO
-            e.printStackTrace();
+            throw new RuntimeException("Cannot load video", e);
         }
+    }
+
+    private void setupSlider() {
+
+        final Duration duration = mediaPlayer.getMedia().getDuration();
+
+        seekSlider.setMinimum(0);
+        seekSlider.setMaximum((int) duration.toSeconds());
+        seekSlider.setValue(0);
+        Hashtable<Integer, JComponent> labelTable = new Hashtable<>();
+        labelTable.put(0, new JLabel("0"));
+
+        labelTable.put(seekSlider.getMaximum(), new JLabel(TimeHelper.getTimeString((long) duration.toMillis())));
+        seekSlider.setLabelTable(labelTable);
+        seekSlider.setPaintLabels(true);
     }
 
     void playPause() {
@@ -113,6 +142,7 @@ final class VideoPlayer extends JPanel implements ActionListener {
     private void play() {
         mediaPlayer.play();
         playPause.setText("Pause");
+        seekSlider.setVisible(false);
         enableSeekControls(false);
     }
 
@@ -120,6 +150,8 @@ final class VideoPlayer extends JPanel implements ActionListener {
         if (mediaPlayer != null) {
             mediaPlayer.pause();
             playPause.setText("Play");
+            seekSlider.setVisible(true);
+            seekSlider.setValue((int) mediaPlayer.getCurrentTime().toSeconds());
             enableSeekControls(true);
         }
     }
@@ -131,10 +163,11 @@ final class VideoPlayer extends JPanel implements ActionListener {
     }
 
     private void enableSeekControls(boolean enable) {
-        fw50.setEnabled(enable);
-        fw100.setEnabled(enable);
-        bw50.setEnabled(enable);
-        bw100.setEnabled(enable);
+        next.setEnabled(enable);
+        next2.setEnabled(enable);
+        prev.setEnabled(enable);
+        prev2.setEnabled(enable);
+        seekSlider.setEnabled(enable);
     }
 
     private void enableControls(boolean enable) {
@@ -155,7 +188,7 @@ final class VideoPlayer extends JPanel implements ActionListener {
         return filePath.getText();
     }
 
-    void seek(double durationMillis) {
+    void step(double durationMillis) {
         if (durationMillis < 0) {
             mediaPlayer.seek(mediaPlayer.getCurrentTime().subtract(new Duration(Math.abs(durationMillis))));
         } else {
@@ -163,19 +196,15 @@ final class VideoPlayer extends JPanel implements ActionListener {
         }
     }
 
-    private void chooseSourceVideo() {
+    private void loadVideo() {
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new FileNameExtensionFilter(
                 "Video files", "mp4", "avi"));
 
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-            try {
-                //appendLog("Video file type is " + getVideoType());
-            } catch (Exception e) {
-                // ignore at this stage
-            }
-            loadVideo();
+            loadVideoPanel();
+            setupSlider();
             enableControls(true);
         }
     }
@@ -188,16 +217,23 @@ final class VideoPlayer extends JPanel implements ActionListener {
             playPause();
         } else if (source == reset) {
             reset();
-        } else if (source == fw50) {
-            seek(50);
-        } else if (source == fw100) {
-            seek(100);
-        } else if (source == bw50) {
-            seek(-50);
-        } else if (source == bw100) {
-            seek(-100);
+        } else if (source == next) {
+            step(50);
+        } else if (source == next2) {
+            step(100);
+        } else if (source == prev) {
+            step(-50);
+        } else if (source == prev2) {
+            step(-100);
         } else if (source == fileChoose) {
-            chooseSourceVideo();
+            loadVideo();
+        }
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        if (mediaPlayer != null) {
+            mediaPlayer.seek(new Duration(seekSlider.getValue() * 1000));
         }
     }
 }

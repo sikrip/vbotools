@@ -2,6 +2,7 @@ package org.sikrip.vboeditor.gui;
 
 
 import org.sikrip.vboeditor.VboEditor;
+import org.sikrip.vboeditor.helper.TimeHelper;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
 import org.sikrip.vboeditor.model.TraveledRoutePoint;
 
@@ -16,7 +17,6 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 final class TelemetryPlayer extends JPanel implements ActionListener, ChangeListener {
@@ -30,6 +30,8 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private final TraveledRoutePanel traveledRoutePanel;
 
     private final JPanel controlsPanel = new JPanel(new BorderLayout());
+    private final JLabel timeLabel = new JLabel();
+    private final JLabel speedLabel = new JLabel();
     private final JButton prev2 = new JButton("<<");
     private final JButton prev = new JButton("<");
     private final JButton next = new JButton(">");
@@ -44,7 +46,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private final List<TraveledRoutePoint> traveledRoutePoints = new ArrayList<>();
     private double startTime;
 
-    public TelemetryPlayer() {
+    TelemetryPlayer() {
 
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Telemetry"));
@@ -72,7 +74,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
 
     private void createControlsPanel() {
 
-        final JPanel panel = new JPanel();
+        JPanel panel = new JPanel();
 
         panel.add(prev2);
         panel.add(prev);
@@ -83,8 +85,14 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
 
         controlsPanel.add(panel, BorderLayout.CENTER);
 
+        panel = new JPanel(new BorderLayout());
+        JPanel infoPanel = new JPanel(new GridLayout(1, 2));
+        infoPanel.add(timeLabel);
+        infoPanel.add(speedLabel);
+        panel.add(infoPanel, BorderLayout.NORTH);
+        panel.add(seekSlider, BorderLayout.CENTER);
         seekSlider.setValue(0);
-        controlsPanel.add(seekSlider, BorderLayout.NORTH);
+        controlsPanel.add(panel, BorderLayout.NORTH);
 
         prev2.addActionListener(this);
         prev.addActionListener(this);
@@ -111,12 +119,6 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
 
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-
-            try {
-                //appendLog("GPS refresh rate is " + VboEditor.identifyGPSRefreshRate(sourceVboFilePath.getText()) + "HZ");
-            } catch (Exception e) {
-                // ignore at this stage
-            }
             paintTraveledRoute();
             setupSlider();
             enableControls(true);
@@ -129,7 +131,8 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         seekSlider.setValue(0);
         Hashtable<Integer, JComponent> labelTable = new Hashtable<>();
         labelTable.put(0, new JLabel("0"));
-        labelTable.put(seekSlider.getMaximum(), new JLabel(getTime(traveledRoutePoints.size() - 1)));
+        final long timeMillis = (long) (traveledRoutePoints.get(traveledRoutePoints.size() - 1).getTime() * 1000 - startTime * 1000);
+        labelTable.put(seekSlider.getMaximum(), new JLabel(TimeHelper.getTimeString(timeMillis)));
         seekSlider.setLabelTable(labelTable);
         seekSlider.setPaintLabels(true);
     }
@@ -139,17 +142,17 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         final Object source = e.getSource();
 
         if (source == prev2) {
-            seek(-2);
+            step(-2);
         } else if (source == prev) {
-            seek(-1);
+            step(-1);
         } else if (source == playPause) {
             playPause();
         } else if (source == reset) {
             reset();
         } else if (source == next) {
-            seek(1);
+            step(1);
         } else if (source == next2) {
-            seek(2);
+            step(2);
         } else if (source == fileChoose) {
             loadTelemetry();
         }
@@ -201,13 +204,14 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private void play() {
         playPause.setText("Pause");
         enableScanControls(false);
+        seekSlider.setVisible(false);
         playFlag.set(true);
         final Thread playThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 while (currentPositionIdx < traveledRoutePoints.size()) {
                     if (playFlag.get()) {
-                        seek(1);
+                        step(1);
                         try {
                             Thread.sleep(gpsDataIntervalMillis);
                         } catch (InterruptedException e) {
@@ -225,17 +229,25 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     void pause() {
         playPause.setText("Play");
         enableScanControls(true);
+        seekSlider.setVisible(true);
+        seekSlider.setValue(currentPositionIdx);
         playFlag.set(false);
     }
 
-    void seek(int amount) {
+    void step(int amount) {
         currentPositionIdx += amount;
         if (currentPositionIdx < 0) {
             currentPositionIdx = 0;
         } else if (currentPositionIdx >= traveledRoutePoints.size()) {
             currentPositionIdx = traveledRoutePoints.size() - 1;
         }
-        seekSlider.setValue(currentPositionIdx);
+        drawPosition();
+    }
+
+    private void drawPosition() {
+        final long timeMillis = (long) (traveledRoutePoints.get(currentPositionIdx).getTime() * 1000 - startTime * 1000);
+        timeLabel.setText("Time: " + TimeHelper.getTimeString(timeMillis));
+        speedLabel.setText("Speed: " + traveledRoutePoints.get(currentPositionIdx).getSpeed());
         traveledRoutePanel.repaint();
     }
 
@@ -246,7 +258,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         } else if (currentPositionIdx >= traveledRoutePoints.size()) {
             currentPositionIdx = traveledRoutePoints.size() - 1;
         }
-        traveledRoutePanel.repaint();
+        drawPosition();
     }
 
     private void calculateTraveledRoute(final List<TraveledRouteCoordinate> traveledRouteCoordinates) {
@@ -331,15 +343,6 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         startTime = traveledRouteCoordinates.get(0).getTime();
     }
 
-    private String getTime(int position) {
-        final long timeMillis = (long) (traveledRoutePoints.get(position).getTime() * 1000 - startTime * 1000);
-
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(timeMillis);
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(timeMillis) - TimeUnit.MINUTES.toSeconds(minutes);
-        long millis = timeMillis - TimeUnit.SECONDS.toMillis(seconds) - TimeUnit.MINUTES.toMillis(minutes);
-        return String.format("%02d:%02d.%03d", minutes, seconds, millis);
-    }
-
     @Override
     public void stateChanged(ChangeEvent e) {
         goTo(seekSlider.getValue());
@@ -364,16 +367,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
                 g.fillOval(currentPosition.getX() - CURRENT_POSITION_MARKER_SIZE / 2,
                         currentPosition.getY() - CURRENT_POSITION_MARKER_SIZE / 2,
                         CURRENT_POSITION_MARKER_SIZE, CURRENT_POSITION_MARKER_SIZE);
-
-                g.setColor(Color.BLUE);
-                g.drawString(getSpeed(), 5, 25);
-                g.drawString("Time: " + getTime(currentPositionIdx), 5, 50);
             }
         }
-
-        private String getSpeed() {
-            return "Speed: " + traveledRoutePoints.get(currentPositionIdx).getSpeed();
-        }
     }
-
 }
