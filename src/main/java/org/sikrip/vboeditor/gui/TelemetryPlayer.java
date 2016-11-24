@@ -14,13 +14,13 @@ import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 final class TelemetryPlayer extends JPanel implements ActionListener {
 
     private static final int MINIMUM_IMAGE_PADDING_IN_PX = 50;
     public static final int CURRENT_POSITION_MARKER_SIZE = 8;
-    public static final long ROUTE_DRAWING_MILLIS = 5;
 
     private final JButton prev2;
     private final JButton prev;
@@ -43,6 +43,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
 
     private int currentPositionIdx = 0;
     private final List<TraveledRoutePoint> traveledRoutePoints = new ArrayList<>();
+    private double startTime;
 
     public TelemetryPlayer() {
         setLayout(new BorderLayout());
@@ -156,7 +157,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         playPause.setEnabled(enable);
     }
 
-    void showControls(boolean show){
+    void showControls(boolean show) {
         controlsPanel.setVisible(show);
     }
 
@@ -184,7 +185,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
                         if (playFlag.get()) {
                             seek(1);
                             try {
-                                Thread.sleep(gpsDataIntervalMillis - ROUTE_DRAWING_MILLIS);
+                                Thread.sleep(gpsDataIntervalMillis);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
@@ -212,13 +213,14 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
         if (traveledRouteCoordinates.isEmpty()) {
             throw new RuntimeException("Cannot read travelled route");
         }
+
+        final Dimension traveledRouteComponentSize = traveledRoutePanel.getSize();
         gpsDataIntervalMillis = traveledRouteCoordinates.get(0).getGpsDataInterval();
-        final Dimension size = getSize();
 
         traveledRoutePoints.clear();
 
-        final double actualWidth = size.getWidth();
-        final double actualHeight = size.getHeight();
+        final double actualWidth = traveledRouteComponentSize.getWidth();
+        final double actualHeight = traveledRouteComponentSize.getHeight();
 
         // min and max coordinates, used in the computation below
         Point2D.Double minXY = new Point2D.Double(-1, -1);
@@ -286,6 +288,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
 
             traveledRoutePoints.add(new TraveledRoutePoint(adjustedX, adjustedY, coordinate.getTime(), coordinate.getSpeed()));
         }
+        startTime = traveledRouteCoordinates.get(0).getTime();
     }
 
     private class TraveledRoutePanel extends JPanel {
@@ -309,8 +312,22 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
                         CURRENT_POSITION_MARKER_SIZE, CURRENT_POSITION_MARKER_SIZE);
 
                 g.setColor(Color.BLUE);
-                g.drawString("Speed:" + traveledRoutePoints.get(currentPositionIdx).getSpeed(), 5, 25);
+                g.drawString(getSpeed(), 5, 25);
+                g.drawString(getTime(), 5, 50);
             }
+        }
+
+        private String getSpeed() {
+            return "Speed: " + traveledRoutePoints.get(currentPositionIdx).getSpeed();
+        }
+
+        private String getTime() {
+            final long timeMillis = (long) (traveledRoutePoints.get(currentPositionIdx).getTime() * 1000 - startTime * 1000);
+
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(timeMillis);
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(timeMillis) - TimeUnit.MINUTES.toSeconds(minutes);
+            long millis = timeMillis - TimeUnit.SECONDS.toMillis(seconds) - TimeUnit.MINUTES.toMillis(minutes);
+            return String.format("Time: %02d:%02d.%03d", minutes, seconds, millis);
         }
     }
 
