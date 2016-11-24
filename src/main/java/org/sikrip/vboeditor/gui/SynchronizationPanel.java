@@ -21,14 +21,14 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
     private final JCheckBox syncLock = new JCheckBox("Lock video/telemetry data");
     private boolean playing = false;
 
-    private final VboEditorGUI editorGUI;
+    private final VboEditorApplication application;
 
-    public SynchronizationPanel(VboEditorGUI editorGUI) {
-        this.editorGUI = editorGUI;
+    public SynchronizationPanel(VboEditorApplication application) {
+        this.application = application;
         setLayout(new BorderLayout());
 
-        videoPlayer = new VideoPlayer();
-        telemetryPlayer = new TelemetryPlayer();
+        videoPlayer = new VideoPlayer(this);
+        telemetryPlayer = new TelemetryPlayer(this);
 
         final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, videoPlayer, telemetryPlayer);
         add(splitPane, BorderLayout.CENTER);
@@ -36,6 +36,7 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
         final JPanel southPanel = new JPanel();
         southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.X_AXIS));
         southPanel.add(syncLock);
+        syncLock.setEnabled(false);
 
         controlsPanel = new JPanel();
         controlsPanel.add(prev2);
@@ -77,7 +78,7 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
             unlock();
 
         }
-        editorGUI.enableIntegrationAction(syncLock.isSelected());
+        application.enableIntegrationAction(syncLock.isSelected());
         controlsPanel.setVisible(syncLock.isSelected());
     }
 
@@ -93,6 +94,10 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
 
         videoPlayer.showControls(false);
         videoPlayer.pause();
+    }
+
+    void checkCanLock(){
+        syncLock.setEnabled(videoPlayer.isLoaded() && telemetryPlayer.isLoaded());
     }
 
     void forcePause() {
@@ -113,11 +118,6 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
     String getTelemetryFilePath() {
         return telemetryPlayer.getFilePath();
     }
-
-    void clear() {
-        throw new UnsupportedOperationException("Implement me!");
-    }
-
 
     @Override
     public void actionPerformed(ActionEvent e) {

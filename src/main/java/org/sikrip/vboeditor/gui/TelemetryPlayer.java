@@ -27,6 +27,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private final JButton fileChoose = new JButton("...");
     private final JTextField filePath = new JTextField();
 
+    private final SynchronizationPanel synchronizationPanel;
     private final TraveledRoutePanel traveledRoutePanel;
 
     private final JPanel controlsPanel = new JPanel(new BorderLayout());
@@ -46,8 +47,8 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private final List<TraveledRoutePoint> traveledRoutePoints = new ArrayList<>();
     private double startTime;
 
-    TelemetryPlayer() {
-
+    TelemetryPlayer(SynchronizationPanel synchronizationPanel) {
+        this.synchronizationPanel = synchronizationPanel;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Telemetry"));
 
@@ -122,6 +123,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
             paintTraveledRoute();
             setupSlider();
             enableControls(true);
+            synchronizationPanel.checkCanLock();
         }
     }
 
@@ -135,27 +137,6 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         labelTable.put(seekSlider.getMaximum(), new JLabel(TimeHelper.getTimeString(timeMillis)));
         seekSlider.setLabelTable(labelTable);
         seekSlider.setPaintLabels(true);
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        final Object source = e.getSource();
-
-        if (source == prev2) {
-            step(-2);
-        } else if (source == prev) {
-            step(-1);
-        } else if (source == playPause) {
-            playPause();
-        } else if (source == reset) {
-            reset();
-        } else if (source == next) {
-            step(1);
-        } else if (source == next2) {
-            step(2);
-        } else if (source == fileChoose) {
-            loadTelemetry();
-        }
     }
 
     private void reset() {
@@ -179,26 +160,6 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         enableScanControls(enable);
         reset.setEnabled(enable);
         playPause.setEnabled(enable);
-    }
-
-    void showControls(boolean show) {
-        controlsPanel.setVisible(show);
-    }
-
-    long getCurrentTime() {
-        return currentPositionIdx * gpsDataIntervalMillis;
-    }
-
-    String getFilePath() {
-        return filePath.getText();
-    }
-
-    void playPause() {
-        if (playFlag.get()) {
-            pause();
-        } else {
-            play();
-        }
     }
 
     private void play() {
@@ -226,29 +187,20 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         playThread.start();
     }
 
-    void pause() {
-        playPause.setText("Play");
-        enableScanControls(true);
-        seekSlider.setVisible(true);
-        seekSlider.setValue(currentPositionIdx);
-        playFlag.set(false);
-    }
-
-    void step(int amount) {
-        currentPositionIdx += amount;
-        if (currentPositionIdx < 0) {
-            currentPositionIdx = 0;
-        } else if (currentPositionIdx >= traveledRoutePoints.size()) {
-            currentPositionIdx = traveledRoutePoints.size() - 1;
-        }
-        drawPosition();
-    }
-
     private void drawPosition() {
-        final long timeMillis = (long) (traveledRoutePoints.get(currentPositionIdx).getTime() * 1000 - startTime * 1000);
-        timeLabel.setText("Time: " + TimeHelper.getTimeString(timeMillis));
-        speedLabel.setText("Speed: " + traveledRoutePoints.get(currentPositionIdx).getSpeed());
-        traveledRoutePanel.repaint();
+        if (traveledRoutePoints.isEmpty()) {
+            timeLabel.setText("");
+            speedLabel.setText("");
+            seekSlider.setValue(0);
+            seekSlider.setVisible(true);
+            enableControls(false);
+            traveledRoutePanel.repaint();
+        } else {
+            final long timeMillis = (long) (traveledRoutePoints.get(currentPositionIdx).getTime() * 1000 - startTime * 1000);
+            timeLabel.setText("Time: " + TimeHelper.getTimeString(timeMillis));
+            speedLabel.setText("Speed: " + traveledRoutePoints.get(currentPositionIdx).getSpeed());
+            traveledRoutePanel.repaint();
+        }
     }
 
     private void goTo(int position) {
@@ -343,9 +295,72 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         startTime = traveledRouteCoordinates.get(0).getTime();
     }
 
+    void showControls(boolean show) {
+        controlsPanel.setVisible(show);
+    }
+
+    long getCurrentTime() {
+        return currentPositionIdx * gpsDataIntervalMillis;
+    }
+
+    String getFilePath() {
+        return filePath.getText();
+    }
+
+    void playPause() {
+        if (playFlag.get()) {
+            pause();
+        } else {
+            play();
+        }
+    }
+
+    void pause() {
+        playPause.setText("Play");
+        enableScanControls(true);
+        seekSlider.setVisible(true);
+        seekSlider.setValue(currentPositionIdx);
+        playFlag.set(false);
+    }
+
+    void step(int amount) {
+        currentPositionIdx += amount;
+        if (currentPositionIdx < 0) {
+            currentPositionIdx = 0;
+        } else if (currentPositionIdx >= traveledRoutePoints.size()) {
+            currentPositionIdx = traveledRoutePoints.size() - 1;
+        }
+        drawPosition();
+    }
+
+    boolean isLoaded() {
+        return !filePath.getText().isEmpty();
+    }
+
     @Override
     public void stateChanged(ChangeEvent e) {
         goTo(seekSlider.getValue());
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        final Object source = e.getSource();
+
+        if (source == prev2) {
+            step(-2);
+        } else if (source == prev) {
+            step(-1);
+        } else if (source == playPause) {
+            playPause();
+        } else if (source == reset) {
+            reset();
+        } else if (source == next) {
+            step(1);
+        } else if (source == next2) {
+            step(2);
+        } else if (source == fileChoose) {
+            loadTelemetry();
+        }
     }
 
     private class TraveledRoutePanel extends JPanel {

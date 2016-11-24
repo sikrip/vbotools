@@ -9,9 +9,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 
-final class VboEditorGUI extends JFrame implements ActionListener {
+final class VboEditorApplication extends JFrame implements ActionListener {
 
-    private final static String VERSION_TAG = "0.4Beta";
+    private final static String VERSION_TAG = "0.5Beta";
 
     private static final String APP_TITLE = "Telemetry and Video data integrator";
 
@@ -27,12 +27,11 @@ final class VboEditorGUI extends JFrame implements ActionListener {
 
 
     private final JButton performIntegration = new JButton("Integrate telemetry / video data");
-    private final JButton clearAll = new JButton("Clear all");
     private final JButton about = new JButton("About");
 
     private final JTextArea logText = new JTextArea();
 
-    public VboEditorGUI() throws HeadlessException {
+    public VboEditorApplication() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
         waitDialog = new JDialog(this);
     }
@@ -86,7 +85,6 @@ final class VboEditorGUI extends JFrame implements ActionListener {
         panel = new JPanel();
         panel.add(performIntegration);
         performIntegration.setEnabled(false);
-        panel.add(clearAll);
         panel.add(about);
         southPanel.add(panel, BorderLayout.CENTER);
 
@@ -102,7 +100,6 @@ final class VboEditorGUI extends JFrame implements ActionListener {
     private void addActionListeners() {
         outputDirChoose.addActionListener(this);
         performIntegration.addActionListener(this);
-        clearAll.addActionListener(this);
         about.addActionListener(this);
     }
 
@@ -205,13 +202,6 @@ final class VboEditorGUI extends JFrame implements ActionListener {
         logText.append("\n");
     }
 
-    private void clearAll() {
-        synchronizationPanel.clear();
-        outputDirPath.setText("");
-        sessionName.setText("");
-        logText.setText("");
-    }
-
     private void showAboutDialog() {
         final String aboutMessage = "<html>" +
                 "<h2>" + APP_TITLE + "</h2>" +
@@ -234,8 +224,6 @@ final class VboEditorGUI extends JFrame implements ActionListener {
             chooseOutputDirectory();
         } else if (source == performIntegration) {
             integrateGpsAndVideo();
-        } else if (source == clearAll) {
-            clearAll();
         } else if (source == about) {
             showAboutDialog();
         }
@@ -244,7 +232,7 @@ final class VboEditorGUI extends JFrame implements ActionListener {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                final VboEditorGUI editorGui = new VboEditorGUI();
+                final VboEditorApplication editorGui = new VboEditorApplication();
                 editorGui.createGui();
                 editorGui.addActionListeners();
                 editorGui.pack();

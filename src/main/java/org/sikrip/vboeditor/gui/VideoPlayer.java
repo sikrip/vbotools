@@ -28,6 +28,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
     private final JButton fileChoose = new JButton("...");
     private final JTextField filePath = new JTextField();
 
+    private final SynchronizationPanel synchronizationPanel;
     private MediaPlayer mediaPlayer;
     private final JFXPanel videoPanel;
 
@@ -41,8 +42,8 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
     private final JButton next = new JButton(">");
     private final JButton next2 = new JButton(">>");
 
-    VideoPlayer() {
-
+    VideoPlayer(SynchronizationPanel synchronizationPanel) {
+        this.synchronizationPanel = synchronizationPanel;
         setBorder(BorderFactory.createTitledBorder("Video"));
 
         // inits Java FX toolkit
@@ -130,30 +131,11 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         seekSlider.setPaintLabels(true);
     }
 
-    void playPause() {
-        final MediaPlayer.Status status = mediaPlayer.getStatus();
-        if (MediaPlayer.Status.PLAYING.equals(status)) {
-            pause();
-        } else {
-            play();
-        }
-    }
-
     private void play() {
         mediaPlayer.play();
         playPause.setText("Pause");
         seekSlider.setVisible(false);
         enableSeekControls(false);
-    }
-
-    void pause() {
-        if (mediaPlayer != null) {
-            mediaPlayer.pause();
-            playPause.setText("Play");
-            seekSlider.setVisible(true);
-            seekSlider.setValue((int) mediaPlayer.getCurrentTime().toSeconds());
-            enableSeekControls(true);
-        }
     }
 
     private void reset() {
@@ -176,6 +158,39 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         playPause.setEnabled(enable);
     }
 
+    private void loadVideo() {
+        final JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter(
+                "Video files", "mp4", "avi"));
+
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            loadVideoPanel();
+            setupSlider();
+            enableControls(true);
+            synchronizationPanel.checkCanLock();
+        }
+    }
+
+    void playPause() {
+        final MediaPlayer.Status status = mediaPlayer.getStatus();
+        if (MediaPlayer.Status.PLAYING.equals(status)) {
+            pause();
+        } else {
+            play();
+        }
+    }
+
+    void pause() {
+        if (mediaPlayer != null) {
+            mediaPlayer.pause();
+            playPause.setText("Play");
+            seekSlider.setVisible(true);
+            seekSlider.setValue((int) mediaPlayer.getCurrentTime().toSeconds());
+            enableSeekControls(true);
+        }
+    }
+
     void showControls(boolean show) {
         controlsPanel.setVisible(show);
     }
@@ -196,17 +211,8 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         }
     }
 
-    private void loadVideo() {
-        final JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new FileNameExtensionFilter(
-                "Video files", "mp4", "avi"));
-
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-            loadVideoPanel();
-            setupSlider();
-            enableControls(true);
-        }
+    boolean isLoaded() {
+        return !filePath.getText().isEmpty();
     }
 
     @Override

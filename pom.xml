@@ -32,7 +32,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.sikrip.vboeditor.gui.VboEditorGUI</mainClass>
+                            <mainClass>org.sikrip.vboeditor.gui.VboEditorApplication</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
