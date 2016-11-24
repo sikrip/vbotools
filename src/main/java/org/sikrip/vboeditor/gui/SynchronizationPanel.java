@@ -72,17 +72,27 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
 
     private void toggleLock() {
         if (syncLock.isSelected()) {
-            // unlock
-            telemetryPlayer.showControls(false);
-            videoPlayer.showControls(false);
+            lock();
         } else {
-            // lock
-            forcePause();
-            telemetryPlayer.showControls(true);
-            videoPlayer.showControls(true);
+            unlock();
+
         }
         editorGUI.enableIntegrationAction(syncLock.isSelected());
         controlsPanel.setVisible(syncLock.isSelected());
+    }
+
+    private void unlock() {
+        forcePause();
+        telemetryPlayer.showControls(true);
+        videoPlayer.showControls(true);
+    }
+
+    private void lock() {
+        telemetryPlayer.showControls(false);
+        telemetryPlayer.pause();
+
+        videoPlayer.showControls(false);
+        videoPlayer.pause();
     }
 
     void forcePause() {

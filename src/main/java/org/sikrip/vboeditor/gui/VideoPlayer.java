@@ -104,13 +104,23 @@ final class VideoPlayer extends JPanel implements ActionListener {
     void playPause() {
         final MediaPlayer.Status status = mediaPlayer.getStatus();
         if (MediaPlayer.Status.PLAYING.equals(status)) {
+            pause();
+        } else {
+            play();
+        }
+    }
+
+    private void play() {
+        mediaPlayer.play();
+        playPause.setText("Pause");
+        enableSeekControls(false);
+    }
+
+    void pause() {
+        if (mediaPlayer != null) {
             mediaPlayer.pause();
             playPause.setText("Play");
             enableSeekControls(true);
-        } else {
-            mediaPlayer.play();
-            playPause.setText("Pause");
-            enableSeekControls(false);
         }
     }
 
@@ -133,7 +143,7 @@ final class VideoPlayer extends JPanel implements ActionListener {
         playPause.setEnabled(enable);
     }
 
-    void showControls(boolean show){
+    void showControls(boolean show) {
         controlsPanel.setVisible(show);
     }
 

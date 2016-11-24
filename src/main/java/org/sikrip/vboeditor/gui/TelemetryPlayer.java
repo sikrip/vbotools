@@ -171,32 +171,40 @@ final class TelemetryPlayer extends JPanel implements ActionListener {
 
     void playPause() {
         if (playFlag.get()) {
-            playPause.setText("Play");
-            enableScanControls(true);
-            playFlag.set(false);
+            pause();
         } else {
-            playPause.setText("Pause");
-            enableScanControls(false);
-            playFlag.set(true);
-            final Thread playThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (currentPositionIdx < traveledRoutePoints.size()) {
-                        if (playFlag.get()) {
-                            seek(1);
-                            try {
-                                Thread.sleep(gpsDataIntervalMillis);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        } else {
-                            break;
+            play();
+        }
+    }
+
+    private void play() {
+        playPause.setText("Pause");
+        enableScanControls(false);
+        playFlag.set(true);
+        final Thread playThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (currentPositionIdx < traveledRoutePoints.size()) {
+                    if (playFlag.get()) {
+                        seek(1);
+                        try {
+                            Thread.sleep(gpsDataIntervalMillis);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
+                    } else {
+                        break;
                     }
                 }
-            });
-            playThread.start();
-        }
+            }
+        });
+        playThread.start();
+    }
+
+    void pause() {
+        playPause.setText("Play");
+        enableScanControls(true);
+        playFlag.set(false);
     }
 
     void seek(int amount) {
