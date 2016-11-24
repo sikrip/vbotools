@@ -62,8 +62,6 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
 
         createControlsPanel();
         add(controlsPanel, BorderLayout.SOUTH);
-
-
         enableControls(false);
     }
 
@@ -110,7 +108,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
                     timeLabel.setText("Time: " + TimeHelper.getTimeString((long) mediaPlayer.getCurrentTime().toMillis()));
                 }
             });
-
+            timeLabel.setText("Time: " + TimeHelper.getTimeString(0));
         } catch (MalformedURLException e) {
             throw new RuntimeException("Cannot load video", e);
         }
@@ -135,12 +133,19 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         mediaPlayer.play();
         playPause.setText("Pause");
         seekSlider.setVisible(false);
+        enableFileControls(false);
         enableSeekControls(false);
+    }
+
+    private void enableFileControls(boolean b) {
+        fileChoose.setEnabled(b);
+        filePath.setEnabled(b);
     }
 
     private void reset() {
         mediaPlayer.stop();
         playPause.setText("Play");
+        seekSlider.setValue(0);
         enableSeekControls(true);
     }
 
@@ -150,6 +155,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         prev.setEnabled(enable);
         prev2.setEnabled(enable);
         seekSlider.setEnabled(enable);
+        reset.setEnabled(enable);
     }
 
     private void enableControls(boolean enable) {
@@ -167,6 +173,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
             filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
             loadVideoPanel();
             setupSlider();
+
             enableControls(true);
             synchronizationPanel.checkCanLock();
         }
@@ -187,6 +194,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
             playPause.setText("Play");
             seekSlider.setVisible(true);
             seekSlider.setValue((int) mediaPlayer.getCurrentTime().toSeconds());
+            enableFileControls(true);
             enableSeekControls(true);
         }
     }

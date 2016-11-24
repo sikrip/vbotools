@@ -154,6 +154,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         next.setEnabled(enable);
         next2.setEnabled(enable);
         seekSlider.setEnabled(enable);
+        reset.setEnabled(enable);
     }
 
     private void enableControls(boolean enable) {
@@ -165,6 +166,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private void play() {
         playPause.setText("Pause");
         enableScanControls(false);
+        enableFileControls(false);
         seekSlider.setVisible(false);
         playFlag.set(true);
         final Thread playThread = new Thread(new Runnable() {
@@ -295,6 +297,11 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         startTime = traveledRouteCoordinates.get(0).getTime();
     }
 
+    private void enableFileControls(boolean b) {
+        fileChoose.setEnabled(b);
+        filePath.setEnabled(b);
+    }
+
     void showControls(boolean show) {
         controlsPanel.setVisible(show);
     }
@@ -318,6 +325,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     void pause() {
         playPause.setText("Play");
         enableScanControls(true);
+        enableFileControls(true);
         seekSlider.setVisible(true);
         seekSlider.setValue(currentPositionIdx);
         playFlag.set(false);

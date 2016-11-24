@@ -56,6 +56,9 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
         next.addActionListener(this);
         next2.addActionListener(this);
         playPauseAll.addActionListener(this);
+
+        videoPlayer.setPreferredSize(new Dimension(450, 300));
+        telemetryPlayer.setPreferredSize(new Dimension(350, 300));
     }
 
     private void playPause() {

@@ -44,7 +44,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
         waitDialog.getContentPane().add(new JLabel("<html><h2>Working, please wait...</h2></html>"));
 
-        mainPanel.setPreferredSize(new Dimension(800, 600));
+        mainPanel.setPreferredSize(new Dimension(840, 560));
         mainPanel.add(synchronizationPanel, BorderLayout.CENTER);
         mainPanel.add(createSouthPanel(), BorderLayout.SOUTH);
 
@@ -237,6 +237,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                 editorGui.addActionListeners();
                 editorGui.pack();
                 editorGui.setLocationRelativeTo(null);
+                editorGui.setResizable(false);
                 editorGui.setVisible(true);
                 editorGui.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             }
