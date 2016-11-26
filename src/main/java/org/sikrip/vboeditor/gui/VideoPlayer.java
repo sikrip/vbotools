@@ -44,7 +44,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
 
     VideoPlayer(SynchronizationPanel synchronizationPanel) {
         this.synchronizationPanel = synchronizationPanel;
-        setBorder(BorderFactory.createTitledBorder("Video"));
+        setBorder(BorderFactory.createTitledBorder("Video (.avi, .mp4)"));
 
         // inits Java FX toolkit
         videoPanel = new JFXPanel();
