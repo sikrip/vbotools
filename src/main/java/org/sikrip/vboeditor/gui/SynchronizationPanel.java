@@ -23,7 +23,7 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
 
     private final VboEditorApplication application;
 
-    public SynchronizationPanel(VboEditorApplication application) {
+    SynchronizationPanel(VboEditorApplication application) {
         this.application = application;
         setLayout(new BorderLayout());
 
@@ -76,6 +76,7 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
 
     private void toggleLock() {
         if (syncLock.isSelected()) {
+            application.appendLog(String.format("Offset is %sms", getOffset()));
             lock();
         } else {
             unlock();

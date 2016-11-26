@@ -6,8 +6,11 @@ import static junit.framework.TestCase.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.SimpleFormatter;
 
 import org.junit.Test;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
@@ -21,12 +24,12 @@ public class VboEditorTest {
     }
 
     @Test
-    public void verifyTraveledRouteExtraction() throws IOException {
+    public void verifyTraveledRouteExtraction() throws IOException, ParseException {
         List<TraveledRouteCoordinate> route = VboEditor.getTraveledRoute(getTestResourceUrl("/sample-vbo-for-route-test.vbo").getPath());
 
         assertEquals(21, route.size());
         assertEquals(100, route.get(0).getGpsDataInterval());
-        assertEquals(132648.30, route.get(0).getTime());
+        assertEquals(48408300, route.get(0).getTime());
         assertEquals(02279.25223, route.get(0).getLatitude());
         assertEquals(-01401.70107, route.get(0).getLongitude());
         assertEquals(85.160, route.get(0).getSpeed());

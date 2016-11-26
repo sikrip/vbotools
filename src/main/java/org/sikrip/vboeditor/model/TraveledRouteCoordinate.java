@@ -6,10 +6,10 @@ public class TraveledRouteCoordinate {
     private final double latitude;
     private final double longitude;
     private final double speed;
-    private final double time;
+    private final long time;
     private final long gpsDataInterval;
 
-    public TraveledRouteCoordinate(double latitude, double longitude, double time, double speed, long gpsDataInterval) {
+    public TraveledRouteCoordinate(double latitude, double longitude, long time, double speed, long gpsDataInterval) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.time = time;
@@ -25,7 +25,7 @@ public class TraveledRouteCoordinate {
         return longitude;
     }
 
-    public double getTime() {
+    public long getTime() {
         return time;
     }
 

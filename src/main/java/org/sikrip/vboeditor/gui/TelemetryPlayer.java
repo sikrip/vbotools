@@ -45,7 +45,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private long gpsDataIntervalMillis;
     private int currentPositionIdx = 0;
     private final List<TraveledRoutePoint> traveledRoutePoints = new ArrayList<>();
-    private double startTime;
+    private long startTime;
 
     TelemetryPlayer(SynchronizationPanel synchronizationPanel) {
 
@@ -136,7 +136,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         seekSlider.setValue(0);
         Hashtable<Integer, JComponent> labelTable = new Hashtable<>();
         labelTable.put(0, new JLabel("0"));
-        final long timeMillis = (long) (traveledRoutePoints.get(traveledRoutePoints.size() - 1).getTime() * 1000 - startTime * 1000);
+        final long timeMillis = traveledRoutePoints.get(traveledRoutePoints.size() - 1).getTime() - startTime;
         labelTable.put(seekSlider.getMaximum(), new JLabel(TimeHelper.getTimeString(timeMillis)));
         seekSlider.setLabelTable(labelTable);
         seekSlider.setPaintLabels(true);
@@ -201,7 +201,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
             enableControls(false);
             traveledRoutePanel.repaint();
         } else {
-            final long timeMillis = (long) (traveledRoutePoints.get(currentPositionIdx).getTime() * 1000 - startTime * 1000);
+            final long timeMillis = traveledRoutePoints.get(currentPositionIdx).getTime() - startTime;
             timeLabel.setText("Time: " + TimeHelper.getTimeString(timeMillis));
             speedLabel.setText("Speed: " + traveledRoutePoints.get(currentPositionIdx).getSpeed());
             traveledRoutePanel.repaint();

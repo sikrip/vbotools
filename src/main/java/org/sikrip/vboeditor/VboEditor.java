@@ -31,6 +31,10 @@ public class VboEditor {
     public static List<TraveledRouteCoordinate> getTraveledRoute(String vboFilePath) throws IOException {
         final Map<String, List<String>> vboSections = readVboSections(vboFilePath);
         final String dataSeparator = getDataSeparator(vboSections);
+
+        if (Strings.isNullOrEmpty(dataSeparator)) {
+            throw new IllegalArgumentException("Cannot determine data separator (check vbo file for corruption)");
+        }
         final int gpsDataInterval = findGpsDataInterval(vboSections, dataSeparator);
 
         final List<String> header = vboSections.get(HEADER_KEY);
@@ -46,12 +50,21 @@ public class VboEditor {
             if (Integer.valueOf(data[satellitesIdx]) > 0) {
                 Double latitude = Double.valueOf(data[latitudeIdx]);
                 Double longitude = Double.valueOf(data[longitudeIdx]);
-                Double time = Double.valueOf(data[timeIdx]);
+                long time = getTime(data[timeIdx]);
                 Double speed = Double.valueOf(data[speedIdx]);
                 coordinates.add(new TraveledRouteCoordinate(latitude, longitude, time, speed, gpsDataInterval));
             }
         }
         return coordinates;
+    }
+
+    private static long getTime(String time) {
+        // Time: This is UTC time since midnight in the form HH:MM:SS.SS,
+        final long hh = Long.valueOf(time.substring(0, 2));
+        final long mm = Long.valueOf(time.substring(2, 4));
+        final long ss = Long.valueOf(time.substring(4, 6));
+        final long millis = Long.valueOf(time.substring(7, 9)) * 10;
+        return millis + ss * 1000 + mm * 60 * 1000 + hh * 60 * 60 * 1000;
     }
 
     /**
@@ -84,7 +97,7 @@ public class VboEditor {
      * @param gpsDataOffset     the offset of the gps data start time relative to the video
      *                          (positive values indicate that GPS data start AFTER the video,
      *                          negative values indicate that the GPS data start BEFORE the video)
-     * @throws IOException
+     * @throws IOException if a file related error occurs
      */
     public static void createVboWithVideoMetadata(String outputDirBasePath, String originalVboPath,
                                                   VideoType videoType, String sessionName, int gpsDataOffset)
@@ -102,7 +115,7 @@ public class VboEditor {
         headerData.add("avisynctime");
 
         final String dataSeparator = getDataSeparator(vboSections);
-        if (dataSeparator == null) {
+        if (Strings.isNullOrEmpty(dataSeparator)) {
             throw new RuntimeException(String.format("Could not find data separator. Supported separators are %s", DATA_SEPARATORS));
         }
 
@@ -165,25 +178,6 @@ public class VboEditor {
             }
         } else {
             throw new RuntimeException("Cannot create output directory");
-        }
-    }
-
-    public static int identifyGPSRefreshRate(String vboFilePath) throws IOException {
-
-        final Map<String, List<String>> vboSections = readVboSections(vboFilePath);
-        final int gpsDataInterval = findGpsDataInterval(vboSections, getDataSeparator(vboSections));
-
-        switch (gpsDataInterval) {
-            case 1000:
-                return 1;
-            case 200:
-                return 5;
-            case 100:
-                return 10;
-            case 50:
-                return 20;
-            default:
-                throw new RuntimeException("Cannot identify GPS refresh rate");
         }
     }
 

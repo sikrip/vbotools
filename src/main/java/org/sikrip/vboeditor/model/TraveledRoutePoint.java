@@ -5,11 +5,11 @@ public class TraveledRoutePoint {
 
     private final int x;
     private final int y;
-    private final double time;
+    private final long time;
     private final double speed;
 
 
-    public TraveledRoutePoint(int x, int y, double time, double speed) {
+    public TraveledRoutePoint(int x, int y, long time, double speed) {
         this.x = x;
         this.y = y;
         this.time = time;
@@ -24,7 +24,7 @@ public class TraveledRoutePoint {
         return y;
     }
 
-    public double getTime() {
+    public long getTime() {
         return time;
     }
 

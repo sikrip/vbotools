@@ -7,44 +7,45 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
 final class VboEditorApplication extends JFrame implements ActionListener {
 
-    private final static String VERSION_TAG = "0.5Beta";
+    private final static String VERSION_TAG = "0.6Beta";
 
     private static final String APP_TITLE = "Vbo Tools";
 
-    private final JPanel mainPanel = new JPanel(new BorderLayout());
+    private final JTabbedPane tabs = new JTabbedPane();
+    private final JPanel telemetryVideoIntegrationPanel = new JPanel(new BorderLayout());
     private final JDialog waitDialog;
-
-    private final JButton outputDirChoose = new JButton("...");
-    private final JTextField outputDirPath = new JTextField();
-
-    private final JTextField sessionName = new JTextField();
 
     private final SynchronizationPanel synchronizationPanel;
 
-
+    private final JTextField outputDirPath = new JTextField();
+    private final JButton outputDirChoose = new JButton("...");
+    private final JTextField sessionName = new JTextField();
     private final JButton performIntegration = new JButton("Integrate telemetry / video data");
-    private final JButton about = new JButton("About");
 
     private final JTextArea logText = new JTextArea();
 
     private VboEditorApplication() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
-        waitDialog = new JDialog(this);
+        waitDialog = new JDialog(this, true);
     }
 
     private void createGui() {
 
         waitDialog.getContentPane().add(new JLabel("<html><h2>Working, please wait...</h2></html>"));
 
-        mainPanel.setPreferredSize(new Dimension(840, 560));
-        mainPanel.add(synchronizationPanel, BorderLayout.CENTER);
-        mainPanel.add(createSouthPanel(), BorderLayout.SOUTH);
+        telemetryVideoIntegrationPanel.setPreferredSize(new Dimension(840, 580));
+        telemetryVideoIntegrationPanel.add(synchronizationPanel, BorderLayout.CENTER);
+        telemetryVideoIntegrationPanel.add(createSouthPanel(), BorderLayout.SOUTH);
+
+        tabs.add("Telemetry/video integration", telemetryVideoIntegrationPanel);
+        tabs.add("About", createAboutPanel());
 
         setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
-        getContentPane().add(mainPanel);
+        getContentPane().add(tabs);
     }
 
     private JPanel createSouthPanel() {
@@ -53,7 +54,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
-        JLabel label = new JLabel("Output folder");
+        JLabel label = new JLabel("Output folder: ");
         panel.add(label);
         panel.add(outputDirPath);
         panel.add(outputDirChoose);
@@ -65,7 +66,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
         panel.add(Box.createRigidArea(new Dimension(5, 0)));
 
-        label = new JLabel("Session Name");
+        label = new JLabel("Session Name: ");
         sessionName.setToolTipText(toolTipText);
         panel.add(label);
         panel.add(sessionName);
@@ -80,7 +81,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         panel = new JPanel();
         panel.add(performIntegration);
         performIntegration.setEnabled(false);
-        panel.add(about);
         southPanel.add(panel, BorderLayout.CENTER);
 
         logText.setEditable(false);
@@ -89,13 +89,14 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         logScroll.setBorder(BorderFactory.createTitledBorder("Log"));
         southPanel.add(logScroll, BorderLayout.SOUTH);
 
+        southPanel.setBorder(BorderFactory.createEtchedBorder());
+
         return southPanel;
     }
 
     private void addActionListeners() {
         outputDirChoose.addActionListener(this);
         performIntegration.addActionListener(this);
-        about.addActionListener(this);
     }
 
     private void chooseOutputDirectory() {
@@ -144,8 +145,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
             final VboEditor.VideoType videoType = getVideoType();
 
             final long gpsDataTotalOffsetMillis = synchronizationPanel.getOffset();
-            appendLog(String.format("Offset is %s", gpsDataTotalOffsetMillis));
-
 
             final Component messageDialogParent = this;
             waitDialog.setUndecorated(true);
@@ -165,7 +164,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                     appendLog("\n");
                     JOptionPane.showMessageDialog(messageDialogParent,
                             "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
-
                     return null;
                 }
 
@@ -174,8 +172,8 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                     waitDialog.dispose();
                 }
             };
-            waitDialog.setVisible(true);
             worker.execute();
+            waitDialog.setVisible(true);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
         }
@@ -188,27 +186,33 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         if (Strings.isNullOrEmpty(videoFilePath)) {
             throw new IllegalStateException("Please select a valid video file");
         }
-        if (Strings.isNullOrEmpty(outputDir)) {
+        final File outputDirFile = new File(outputDir);
+        if (!outputDirFile.exists() || !outputDirFile.isDirectory()) {
             throw new IllegalStateException("Please select a valid output directory");
         }
         if (Strings.isNullOrEmpty(sessionName)) {
             throw new IllegalStateException("Please select a valid session name");
+        } else {
+            final File finalPath = new File(outputDir + "/" + sessionName);
+            if (!finalPath.exists() && !finalPath.mkdir()) {
+                throw new IllegalStateException("Session name should be a valid folder name");
+            }
         }
     }
 
-    private void appendLog(String log) {
+    void appendLog(String log) {
         logText.append(log);
         logText.append("\n");
     }
 
-    private void showAboutDialog() {
+    private JPanel createAboutPanel() {
         final String aboutMessage = "<html>" +
                 "<h2>" + APP_TITLE + "</h2>" +
                 "<h2>Version " + VERSION_TAG + "</h2>" +
                 "A toolset for the .vbo telemetry format including:" +
                 "<ul>" +
                 "<li>A tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</li>" +
-                "<li>More to came!</li>" +
+                "<li>More to come!</li>" +
                 "</ul>" +
                 "<p>Author George Sikalias (sikrip)</p>" +
                 "<p>Contact Info: " +
@@ -216,7 +220,10 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                 "facebook.com/sikrip, " +
                 "twitter @sikrip</p>" +
                 "</html>";
-        JOptionPane.showMessageDialog(this, aboutMessage, "About this software", JOptionPane.INFORMATION_MESSAGE);
+        final JPanel aboutPanel = new JPanel();
+
+        aboutPanel.add(new JLabel(aboutMessage));
+        return aboutPanel;
     }
 
     void enableIntegrationAction(boolean enable) {
@@ -231,8 +238,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
             chooseOutputDirectory();
         } else if (source == performIntegration) {
             integrateGpsAndVideo();
-        } else if (source == about) {
-            showAboutDialog();
         }
     }
 
