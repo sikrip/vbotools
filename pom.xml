@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.sikrip</groupId>
-    <artifactId>vbo-video-integrator</artifactId>
+    <artifactId>vbotools</artifactId>
     <version>0.5-SNAPSHOT</version>
 
     <properties>
