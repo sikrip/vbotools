@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class TelemetryPlayer extends JPanel implements ActionListener, ChangeListener {
 
     private static final int MINIMUM_IMAGE_PADDING_IN_PX = 50;
-    public static final int CURRENT_POSITION_MARKER_SIZE = 8;
+    private static final int CURRENT_POSITION_MARKER_SIZE = 8;
 
     private final JButton fileChoose = new JButton("...");
     private final JTextField filePath = new JTextField();
@@ -48,14 +48,25 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     private double startTime;
 
     TelemetryPlayer(SynchronizationPanel synchronizationPanel) {
+
         this.synchronizationPanel = synchronizationPanel;
+
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createTitledBorder("Telemetry"));
+        setBorder(BorderFactory.createTitledBorder("Telemetry (.vbo)"));
 
         add(createFileInputPanel(), BorderLayout.NORTH);
 
+        final JPanel centerPanel = new JPanel(new BorderLayout());
+
+        final JPanel labels = new JPanel(new GridLayout(1, 2));
+        labels.add(timeLabel);
+        labels.add(speedLabel);
+        centerPanel.add(labels, BorderLayout.NORTH);
+
         traveledRoutePanel = new TraveledRoutePanel();
-        add(traveledRoutePanel, BorderLayout.CENTER);
+        centerPanel.add(traveledRoutePanel, BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
 
         createControlsPanel();
         add(controlsPanel, BorderLayout.SOUTH);
@@ -75,25 +86,16 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
 
     private void createControlsPanel() {
 
-        JPanel panel = new JPanel();
+        JPanel buttons = new JPanel();
+        buttons.add(prev2);
+        buttons.add(prev);
+        buttons.add(playPause);
+        buttons.add(next);
+        buttons.add(next2);
+        buttons.add(reset);
 
-        panel.add(prev2);
-        panel.add(prev);
-        panel.add(playPause);
-        panel.add(next);
-        panel.add(next2);
-        panel.add(reset);
-
-        controlsPanel.add(panel, BorderLayout.CENTER);
-
-        panel = new JPanel(new BorderLayout());
-        JPanel infoPanel = new JPanel(new GridLayout(1, 2));
-        infoPanel.add(timeLabel);
-        infoPanel.add(speedLabel);
-        panel.add(infoPanel, BorderLayout.NORTH);
-        panel.add(seekSlider, BorderLayout.CENTER);
-        seekSlider.setValue(0);
-        controlsPanel.add(panel, BorderLayout.NORTH);
+        controlsPanel.add(seekSlider, BorderLayout.NORTH);
+        controlsPanel.add(buttons, BorderLayout.CENTER);
 
         prev2.addActionListener(this);
         prev.addActionListener(this);
@@ -102,6 +104,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         next.addActionListener(this);
         next2.addActionListener(this);
         seekSlider.addChangeListener(this);
+        seekSlider.setValue(0);
     }
 
     private void paintTraveledRoute() {
