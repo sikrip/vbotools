@@ -14,31 +14,35 @@ public class VboEditor {
     private static final String NO_VIDEO_SYNCH_TIME = "-00000001";
     private final static String[] DATA_SEPARATORS = {" ", ",", "\t"};
     private static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
-    public static final String HEADER_KEY = "[header]";
-    public static final String DATA_KEY = "[data]";
+    private static final String HEADER_KEY = "[header]";
+    private static final String DATA_KEY = "[data]";
 
     public enum VideoType {
         MP4, AVI
     }
 
+    /**
+     * Gets a list of {@link TraveledRouteCoordinate}s depicting the traveled route of the given vbo file.
+     *
+     * @param vboFilePath the telemetry file
+     * @return a list of {@link TraveledRouteCoordinate}s depicting the traveled route of the given vbo file.
+     * @throws IOException when the telemetry file cannot be read
+     */
     public static List<TraveledRouteCoordinate> getTraveledRoute(String vboFilePath) throws IOException {
         final Map<String, List<String>> vboSections = readVboSections(vboFilePath);
         final String dataSeparator = getDataSeparator(vboSections);
         final int gpsDataInterval = findGpsDataInterval(vboSections, dataSeparator);
 
-        List<String> header = vboSections.get(HEADER_KEY);
-        int timeIdx = header.indexOf("time");
-        int satellitesIdx = header.indexOf("satellites");
-        int latitudeIdx = header.indexOf("latitude");
-        int longitudeIdx = header.indexOf("longitude");
-        int speedIdx = header.indexOf("velocity kmh");
+        final List<String> header = vboSections.get(HEADER_KEY);
+        final int timeIdx = header.indexOf("time");
+        final int satellitesIdx = header.indexOf("satellites");
+        final int latitudeIdx = header.indexOf("latitude");
+        final int longitudeIdx = header.indexOf("longitude");
+        final int speedIdx = header.indexOf("velocity kmh");
 
         final List<TraveledRouteCoordinate> coordinates = new ArrayList<>();
-
-
         for (String dataLine : vboSections.get(DATA_KEY)) {
-            String[] data = dataLine.split(dataSeparator);
-
+            final String[] data = dataLine.split(dataSeparator);
             if (Integer.valueOf(data[satellitesIdx]) > 0) {
                 Double latitude = Double.valueOf(data[latitudeIdx]);
                 Double longitude = Double.valueOf(data[longitudeIdx]);
@@ -46,7 +50,6 @@ public class VboEditor {
                 Double speed = Double.valueOf(data[speedIdx]);
                 coordinates.add(new TraveledRouteCoordinate(latitude, longitude, time, speed, gpsDataInterval));
             }
-
         }
         return coordinates;
     }
@@ -149,7 +152,7 @@ public class VboEditor {
                     new FileWriter(outputDirBasePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
                 writer.write(String.format("File created on %s using VBO Editor", new Date()));
                 writer.newLine();
-                writeSection(vboSections, writer, "[header]");
+                writeSection(vboSections, writer, HEADER_KEY);
                 writeSection(vboSections, writer, "[comments]");
                 //
                 writeSection(vboSections, writer, "[channel units]");
@@ -195,12 +198,12 @@ public class VboEditor {
             throw new RuntimeException("Data sample to small");
         }
 
-        final int timeColumnIdx = vboFileSections.get("[header]").indexOf("time");
+        final int timeColumnIdx = vboFileSections.get(HEADER_KEY).indexOf("time");
 
         Double time = null;
         Double sumOfIntervals = 0.0;
         for (int i = entriesToSkip; i < entriesToSkip + numberOfSamples; i++) {
-            Double currentTime = Double.valueOf(vboFileSections.get("[data]").get(i).split(dataSeparator)[timeColumnIdx]);
+            Double currentTime = Double.valueOf(vboFileSections.get(DATA_KEY).get(i).split(dataSeparator)[timeColumnIdx]);
 
             if (time != null) {
                 sumOfIntervals += currentTime - time;
@@ -255,7 +258,7 @@ public class VboEditor {
     }
 
     private static String getDataSeparator(Map<String, List<String>> vboSections) {
-        String dataLine = vboSections.get("[data]").get(0);
+        String dataLine = vboSections.get(DATA_KEY).get(0);
         for (String separator : DATA_SEPARATORS) {
             if (dataLine.split(separator).length > 0) {
                 return separator;

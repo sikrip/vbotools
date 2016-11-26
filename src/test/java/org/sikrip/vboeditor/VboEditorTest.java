@@ -10,167 +10,180 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
 
 public class VboEditorTest {
 
-	@Test
-	public void verifyDataIntervalIdentification() throws IOException {
-		assertEquals(100, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample-vbo-from-dbn.vbo").getPath()), " "));
-		assertEquals(200, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath()), " "));
-	}
+    @Test
+    public void verifyDataIntervalIdentification() throws IOException {
+        assertEquals(100, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample-vbo-from-dbn.vbo").getPath()), " "));
+        assertEquals(200, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath()), " "));
+    }
 
-	@Test
-	public void verifyVideoFileCreation() throws IOException {
-		final String basePath = getTestResourceUrl("/").getPath();
+    @Test
+    public void verifyTraveledRouteExtraction() throws IOException {
+        List<TraveledRouteCoordinate> route = VboEditor.getTraveledRoute(getTestResourceUrl("/sample-vbo-for-route-test.vbo").getPath());
 
-		VboEditor.createVideoFile(basePath, basePath + "/sample.avi", "my-session");
+        assertEquals(21, route.size());
+        assertEquals(100, route.get(0).getGpsDataInterval());
+        assertEquals(132648.30, route.get(0).getTime());
+        assertEquals(02279.25223, route.get(0).getLatitude());
+        assertEquals(-01401.70107, route.get(0).getLongitude());
+        assertEquals(85.160, route.get(0).getSpeed());
+    }
 
-		final File sourceVideo = new File(basePath + "/sample.avi");
-		final File finalVideo = new File(basePath + "/my-session/my-session0001.avi");
+    @Test
+    public void verifyVideoFileCreation() throws IOException {
+        final String basePath = getTestResourceUrl("/").getPath();
 
-		assertTrue(finalVideo.exists());
-		assertEquals(sourceVideo.length(), finalVideo.length());
-	}
+        VboEditor.createVideoFile(basePath, basePath + "/sample.avi", "my-session");
 
-	@Test
-	public void verifyHarrysLapTimerVbo_ShouldHaveCustomSections() throws IOException {
-		final String basePath = getTestResourceUrl("/").getPath();
+        final File sourceVideo = new File(basePath + "/sample.avi");
+        final File finalVideo = new File(basePath + "/my-session/my-session0001.avi");
 
-		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sampleHarrysLapTimer.vbo", VboEditor.VideoType.MP4, "my-session", 0);
+        assertTrue(finalVideo.exists());
+        assertEquals(sourceVideo.length(), finalVideo.length());
+    }
 
-		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+    @Test
+    public void verifyHarrysLapTimerVbo_ShouldHaveCustomSections() throws IOException {
+        final String basePath = getTestResourceUrl("/").getPath();
 
-		assertTrue(vboWithVideoSections.containsKey("[session data]"));
-		assertTrue(vboWithVideoSections.containsKey("[laptiming]"));
-	}
+        VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sampleHarrysLapTimer.vbo", VboEditor.VideoType.MP4, "my-session", 0);
 
-	@Test
-	public void verifyVideoMetadataIntegration_WhenGpsDataStartBeforeVideo() throws IOException {
+        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
-		final String basePath = getTestResourceUrl("/").getPath();
+        assertTrue(vboWithVideoSections.containsKey("[session data]"));
+        assertTrue(vboWithVideoSections.containsKey("[laptiming]"));
+    }
 
-		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", -2020);
+    @Test
+    public void verifyVideoMetadataIntegration_WhenGpsDataStartBeforeVideo() throws IOException {
 
-		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+        final String basePath = getTestResourceUrl("/").getPath();
 
-		List<String> headers = vboWithVideoSections.get("[header]");
-		assertTrue(headers.contains("avifileindex"));
-		assertTrue(headers.contains("avisynctime"));
+        VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", -2020);
 
-		List<String> videoMetadata = vboWithVideoSections.get("[avi]");
-		assertTrue(videoMetadata.contains("my-session"));
-		assertTrue(videoMetadata.contains("MP4"));
-		assertEquals(2, videoMetadata.size());
+        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
-		List<String> columnNames = vboWithVideoSections.get("[column names]");
-		assertEquals(1, columnNames.size());
-		assertTrue(columnNames.get(0).contains("avifileindex"));
-		assertTrue(columnNames.get(0).contains("avisynctime"));
+        List<String> headers = vboWithVideoSections.get("[header]");
+        assertTrue(headers.contains("avifileindex"));
+        assertTrue(headers.contains("avisynctime"));
 
-		List<String> data = vboWithVideoSections.get("[data]");
-		assertEquals(8374, data.size());
+        List<String> videoMetadata = vboWithVideoSections.get("[avi]");
+        assertTrue(videoMetadata.contains("my-session"));
+        assertTrue(videoMetadata.contains("MP4"));
+        assertEquals(2, videoMetadata.size());
 
-		// Expect 20 invalid data lines: 2020(offset) / 100(refresh rate)
-		for (int i = 0; i < 20; i++) {
-			assertTrue(data.get(i).contains("0001"));
-			assertTrue(data.get(i).contains("-00000001"));
-		}
+        List<String> columnNames = vboWithVideoSections.get("[column names]");
+        assertEquals(1, columnNames.size());
+        assertTrue(columnNames.get(0).contains("avifileindex"));
+        assertTrue(columnNames.get(0).contains("avisynctime"));
 
-		// Expect first valid data line to be 20: 2020 % 100
-		assertTrue(data.get(20).contains("0001"));
-		assertTrue(data.get(20).contains("00000020"));
+        List<String> data = vboWithVideoSections.get("[data]");
+        assertEquals(8374, data.size());
 
-		assertTrue(data.get(21).contains("0001"));
-		assertTrue(data.get(21).contains("00000120"));
+        // Expect 20 invalid data lines: 2020(offset) / 100(refresh rate)
+        for (int i = 0; i < 20; i++) {
+            assertTrue(data.get(i).contains("0001"));
+            assertTrue(data.get(i).contains("-00000001"));
+        }
 
-		assertTrue(data.get(22).contains("0001"));
-		assertTrue(data.get(22).contains("00000220"));
-	}
+        // Expect first valid data line to be 20: 2020 % 100
+        assertTrue(data.get(20).contains("0001"));
+        assertTrue(data.get(20).contains("00000020"));
 
-	@Test
-	public void verifyVideoMetadataIntegration_WhenGpsDataStartBeforeVideoButOffsetIsLessThanGpsDataInterval() throws IOException {
+        assertTrue(data.get(21).contains("0001"));
+        assertTrue(data.get(21).contains("00000120"));
 
-		final String basePath = getTestResourceUrl("/").getPath();
+        assertTrue(data.get(22).contains("0001"));
+        assertTrue(data.get(22).contains("00000220"));
+    }
 
-		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", -20);
+    @Test
+    public void verifyVideoMetadataIntegration_WhenGpsDataStartBeforeVideoButOffsetIsLessThanGpsDataInterval() throws IOException {
 
-		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+        final String basePath = getTestResourceUrl("/").getPath();
 
-		List<String> headers = vboWithVideoSections.get("[header]");
-		assertTrue(headers.contains("avifileindex"));
-		assertTrue(headers.contains("avisynctime"));
+        VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", -20);
 
-		List<String> videoMetadata = vboWithVideoSections.get("[avi]");
-		assertTrue(videoMetadata.contains("my-session"));
-		assertTrue(videoMetadata.contains("MP4"));
-		assertEquals(2, videoMetadata.size());
+        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
-		List<String> columnNames = vboWithVideoSections.get("[column names]");
-		assertEquals(1, columnNames.size());
-		assertTrue(columnNames.get(0).contains("avifileindex"));
-		assertTrue(columnNames.get(0).contains("avisynctime"));
+        List<String> headers = vboWithVideoSections.get("[header]");
+        assertTrue(headers.contains("avifileindex"));
+        assertTrue(headers.contains("avisynctime"));
 
-		List<String> data = vboWithVideoSections.get("[data]");
-		assertEquals(8374, data.size());
+        List<String> videoMetadata = vboWithVideoSections.get("[avi]");
+        assertTrue(videoMetadata.contains("my-session"));
+        assertTrue(videoMetadata.contains("MP4"));
+        assertEquals(2, videoMetadata.size());
 
-		// Expect no invalid data lines and first line to start at 20: 20 % 100
-		assertTrue(data.get(0).contains("0001"));
-		assertTrue(data.get(0).contains("00000020"));
+        List<String> columnNames = vboWithVideoSections.get("[column names]");
+        assertEquals(1, columnNames.size());
+        assertTrue(columnNames.get(0).contains("avifileindex"));
+        assertTrue(columnNames.get(0).contains("avisynctime"));
 
-		assertTrue(data.get(1).contains("0001"));
-		assertTrue(data.get(1).contains("00000120"));
+        List<String> data = vboWithVideoSections.get("[data]");
+        assertEquals(8374, data.size());
 
-		assertTrue(data.get(2).contains("0001"));
-		assertTrue(data.get(2).contains("00000220"));
-	}
+        // Expect no invalid data lines and first line to start at 20: 20 % 100
+        assertTrue(data.get(0).contains("0001"));
+        assertTrue(data.get(0).contains("00000020"));
 
-	@Test
-	public void verifyVideoMetadataIntegration_WhenGpsDataStartAfterVideo() throws IOException {
+        assertTrue(data.get(1).contains("0001"));
+        assertTrue(data.get(1).contains("00000120"));
 
-		final String basePath = getTestResourceUrl("/").getPath();
+        assertTrue(data.get(2).contains("0001"));
+        assertTrue(data.get(2).contains("00000220"));
+    }
 
-		VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 2000);
+    @Test
+    public void verifyVideoMetadataIntegration_WhenGpsDataStartAfterVideo() throws IOException {
 
-		Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+        final String basePath = getTestResourceUrl("/").getPath();
 
-		List<String> headers = vboWithVideoSections.get("[header]");
-		assertTrue(headers.contains("avifileindex"));
-		assertTrue(headers.contains("avisynctime"));
+        VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 2000);
 
-		List<String> videoMetadata = vboWithVideoSections.get("[avi]");
-		assertTrue(videoMetadata.contains("my-session"));
-		assertTrue(videoMetadata.contains("MP4"));
-		assertEquals(2, videoMetadata.size());
+        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
-		List<String> columnNames = vboWithVideoSections.get("[column names]");
-		assertEquals(1, columnNames.size());
-		assertTrue(columnNames.get(0).contains("avifileindex"));
-		assertTrue(columnNames.get(0).contains("avisynctime"));
+        List<String> headers = vboWithVideoSections.get("[header]");
+        assertTrue(headers.contains("avifileindex"));
+        assertTrue(headers.contains("avisynctime"));
 
-		List<String> data = vboWithVideoSections.get("[data]");
-		assertEquals(8374, data.size());
-		assertTrue(data.get(0).contains("0001"));
-		assertTrue(data.get(0).contains("00002000"));
-		assertTrue(data.get(1).contains("0001"));
-		assertTrue(data.get(1).contains("00002100"));
-	}
+        List<String> videoMetadata = vboWithVideoSections.get("[avi]");
+        assertTrue(videoMetadata.contains("my-session"));
+        assertTrue(videoMetadata.contains("MP4"));
+        assertEquals(2, videoMetadata.size());
 
-	@Test
-	public void verifyVboHeadersReading() throws IOException {
-		Map<String, List<String>> vboSections = VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath());
+        List<String> columnNames = vboWithVideoSections.get("[column names]");
+        assertEquals(1, columnNames.size());
+        assertTrue(columnNames.get(0).contains("avifileindex"));
+        assertTrue(columnNames.get(0).contains("avisynctime"));
 
-		assertEquals(6, vboSections.size());
+        List<String> data = vboWithVideoSections.get("[data]");
+        assertEquals(8374, data.size());
+        assertTrue(data.get(0).contains("0001"));
+        assertTrue(data.get(0).contains("00002000"));
+        assertTrue(data.get(1).contains("0001"));
+        assertTrue(data.get(1).contains("00002100"));
+    }
 
-		assertEquals(7, vboSections.get("[header]").size());
-		assertEquals(1, vboSections.get("[column names]").size());
-		assertEquals(4420, vboSections.get("[data]").size());
-	}
+    @Test
+    public void verifyVboHeadersReading() throws IOException {
+        Map<String, List<String>> vboSections = VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath());
 
-	public static URL getTestResourceUrl(String filename) {
-		URL resource = VboEditorTest.class.getResource(filename);
-		if (resource == null) {
-			throw new RuntimeException("Cannot find resource:" + filename);
-		}
-		return resource;
-	}
+        assertEquals(6, vboSections.size());
+
+        assertEquals(7, vboSections.get("[header]").size());
+        assertEquals(1, vboSections.get("[column names]").size());
+        assertEquals(4420, vboSections.get("[data]").size());
+    }
+
+    public static URL getTestResourceUrl(String filename) {
+        URL resource = VboEditorTest.class.getResource(filename);
+        if (resource == null) {
+            throw new RuntimeException("Cannot find resource:" + filename);
+        }
+        return resource;
+    }
 }
