@@ -13,7 +13,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
     private final static String VERSION_TAG = "0.5Beta";
 
-    private static final String APP_TITLE = "Telemetry and Video data integrator";
+    private static final String APP_TITLE = "Vbo Tools";
 
     private final JPanel mainPanel = new JPanel(new BorderLayout());
     private final JDialog waitDialog;
@@ -31,13 +31,9 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
     private final JTextArea logText = new JTextArea();
 
-    public VboEditorApplication() throws HeadlessException {
+    private VboEditorApplication() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
         waitDialog = new JDialog(this);
-    }
-
-    void enableIntegrationAction(boolean enable) {
-        performIntegration.setEnabled(enable);
     }
 
     private void createGui() {
@@ -205,8 +201,12 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private void showAboutDialog() {
         final String aboutMessage = "<html>" +
                 "<h2>" + APP_TITLE + "</h2>" +
-                "<h2> Version " + VERSION_TAG + "</h2>" +
-                "<h4>A little tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</h4>" +
+                "<h2>Version " + VERSION_TAG + "</h2>" +
+                "A toolset for the .vbo telemetry format including:" +
+                "<ul>" +
+                "<li>A tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</li>" +
+                "<li>More to came!</li>" +
+                "</ul>" +
                 "<p>Author George Sikalias (sikrip)</p>" +
                 "<p>Contact Info: " +
                 "sikrip@gmail.com, " +
@@ -214,6 +214,10 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                 "twitter @sikrip</p>" +
                 "</html>";
         JOptionPane.showMessageDialog(this, aboutMessage, "About this software", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    void enableIntegrationAction(boolean enable) {
+        performIntegration.setEnabled(enable);
     }
 
     @Override
