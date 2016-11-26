@@ -7,7 +7,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
 
 final class VboEditorApplication extends JFrame implements ActionListener {
 
@@ -140,18 +139,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
             final String sessionName = this.sessionName.getText();
             final String videoFilePath = synchronizationPanel.getVideoFilePath();
 
-            if (Strings.isNullOrEmpty(vboFilePath)) {
-                throw new IllegalStateException("Please select a valid vbo file");
-            }
-            if (Strings.isNullOrEmpty(videoFilePath)) {
-                throw new IllegalStateException("Please select a valid video file");
-            }
-            if (Strings.isNullOrEmpty(outputDir)) {
-                throw new IllegalStateException("Please select a valid output directory");
-            }
-            if (Strings.isNullOrEmpty(sessionName)) {
-                throw new IllegalStateException("Please select a valid session name");
-            }
+            validateInput(outputDir, vboFilePath, sessionName, videoFilePath);
 
             final VboEditor.VideoType videoType = getVideoType();
 
@@ -169,10 +157,10 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                     try {
                         VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, (int) gpsDataTotalOffsetMillis);
                         VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         JOptionPane.showMessageDialog(messageDialogParent, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
+                        return null;
                     }
-
                     appendLog("Vbo and video files created under " + outputDir + "/" + sessionName);
                     appendLog("\n");
                     JOptionPane.showMessageDialog(messageDialogParent,
@@ -190,6 +178,21 @@ final class VboEditorApplication extends JFrame implements ActionListener {
             worker.execute();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void validateInput(String outputDir, String vboFilePath, String sessionName, String videoFilePath) {
+        if (Strings.isNullOrEmpty(vboFilePath)) {
+            throw new IllegalStateException("Please select a valid vbo file");
+        }
+        if (Strings.isNullOrEmpty(videoFilePath)) {
+            throw new IllegalStateException("Please select a valid video file");
+        }
+        if (Strings.isNullOrEmpty(outputDir)) {
+            throw new IllegalStateException("Please select a valid output directory");
+        }
+        if (Strings.isNullOrEmpty(sessionName)) {
+            throw new IllegalStateException("Please select a valid session name");
         }
     }
 
