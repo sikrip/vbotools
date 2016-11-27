@@ -144,7 +144,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
             final VboEditor.VideoType videoType = getVideoType();
 
-            final long gpsDataTotalOffsetMillis = synchronizationPanel.getOffset();
+            final long gpsDataTotalOffsetMillis = synchronizationPanel.getTelemetryDataOffset();
 
             final Component messageDialogParent = this;
             waitDialog.setUndecorated(true);

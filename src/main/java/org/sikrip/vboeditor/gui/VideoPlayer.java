@@ -25,6 +25,7 @@ import java.util.Hashtable;
 
 final class VideoPlayer extends JPanel implements ActionListener, ChangeListener {
 
+    private static final double MAX_DURATION_FETCH_ATTEMPTS = 5;
     private final JButton fileChoose = new JButton("...");
     private final JTextField filePath = new JTextField();
 
@@ -105,9 +106,10 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
             mediaPlayer.currentTimeProperty().addListener(new InvalidationListener() {
                 @Override
                 public void invalidated(Observable observable) {
-                    timeLabel.setText("Time: " + TimeHelper.getTimeString((long) mediaPlayer.getCurrentTime().toMillis()));
+                    updateTimeLabel();
                 }
             });
+
             timeLabel.setText("Time: " + TimeHelper.getTimeString(0));
         } catch (MalformedURLException e) {
             throw new RuntimeException("Cannot load video", e);
@@ -115,18 +117,30 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
     }
 
     private void setupSlider() {
+        try {
+            Duration duration;
+            int durationFetchAttempts = 1;
+            do {
+                duration = mediaPlayer.getMedia().getDuration();
+                durationFetchAttempts++;
+                if (duration.isUnknown()) {
+                    Thread.sleep(100);
+                }
+            } while (durationFetchAttempts < MAX_DURATION_FETCH_ATTEMPTS && duration.isUnknown());
 
-        final Duration duration = mediaPlayer.getMedia().getDuration();
+            seekSlider.setMinimum(0);
+            seekSlider.setMaximum((int) duration.toSeconds());
+            seekSlider.setValue(0);
+            Hashtable<Integer, JComponent> labelTable = new Hashtable<>();
+            labelTable.put(0, new JLabel("0"));
 
-        seekSlider.setMinimum(0);
-        seekSlider.setMaximum((int) duration.toSeconds());
-        seekSlider.setValue(0);
-        Hashtable<Integer, JComponent> labelTable = new Hashtable<>();
-        labelTable.put(0, new JLabel("0"));
-
-        labelTable.put(seekSlider.getMaximum(), new JLabel(TimeHelper.getTimeString((long) duration.toMillis())));
-        seekSlider.setLabelTable(labelTable);
-        seekSlider.setPaintLabels(true);
+            labelTable.put(seekSlider.getMaximum(), new JLabel(TimeHelper.getTimeString((long) duration.toMillis())));
+            seekSlider.setLabelTable(labelTable);
+            seekSlider.setPaintLabels(true);
+        } catch (Exception e) {
+            // cannot setup the slider for this video
+            seekSlider.setVisible(false);
+        }
     }
 
     private void play() {
@@ -244,10 +258,27 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         }
     }
 
+    private void seek() {
+        mediaPlayer.seek(new Duration(seekSlider.getValue() * 1000));
+        updateTimeLabel();
+    }
+
+    private void updateTimeLabel() {
+        timeLabel.setText("Time: " + TimeHelper.getTimeString((long) mediaPlayer.getCurrentTime().toMillis()));
+    }
+
     @Override
     public void stateChanged(ChangeEvent e) {
         if (mediaPlayer != null) {
-            mediaPlayer.seek(new Duration(seekSlider.getValue() * 1000));
+            seek();
         }
+    }
+
+    void addTelemetryListener(javafx.beans.value.ChangeListener<Duration> telemetryPlayerListener) {
+        mediaPlayer.currentTimeProperty().addListener(telemetryPlayerListener);
+    }
+
+    void removeTelemetryListener(javafx.beans.value.ChangeListener<Duration> telemetryPlayerListener) {
+        mediaPlayer.currentTimeProperty().removeListener(telemetryPlayerListener);
     }
 }

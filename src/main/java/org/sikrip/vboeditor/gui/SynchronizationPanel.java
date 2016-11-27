@@ -1,6 +1,9 @@
 package org.sikrip.vboeditor.gui;
 
 
+import javafx.beans.value.ObservableValue;
+import javafx.util.Duration;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -22,6 +25,11 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
     private boolean playing = false;
 
     private final VboEditorApplication application;
+
+    private javafx.beans.value.ChangeListener<Duration> telemetryPlayerListener;
+
+    // positive number indicates that gps data start after video
+    private long telemetryDataOffset;
 
     SynchronizationPanel(VboEditorApplication application) {
         this.application = application;
@@ -59,11 +67,17 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
 
         videoPlayer.setPreferredSize(new Dimension(450, 300));
         telemetryPlayer.setPreferredSize(new Dimension(350, 300));
+
+        telemetryPlayerListener = new javafx.beans.value.ChangeListener<Duration>() {
+            @Override
+            public void changed(ObservableValue<? extends Duration> observable, Duration oldValue, Duration newValue) {
+                telemetryPlayer.seekByTime((long) newValue.toMillis() - telemetryDataOffset);
+            }
+        };
     }
 
     private void playPause() {
         videoPlayer.playPause();
-        telemetryPlayer.playPause();
         playing = !playing;
 
         playPauseAll.setText(playing ? "Pause" : "Play");
@@ -76,11 +90,10 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
 
     private void toggleLock() {
         if (syncLock.isSelected()) {
-            application.appendLog(String.format("Offset is %sms", getOffset()));
             lock();
+            application.appendLog(String.format("Offset is %sms", getTelemetryDataOffset()));
         } else {
             unlock();
-
         }
         application.enableIntegrationAction(syncLock.isSelected());
         controlsPanel.setVisible(syncLock.isSelected());
@@ -88,14 +101,16 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
 
     private void unlock() {
         forcePause();
+        videoPlayer.removeTelemetryListener(telemetryPlayerListener);
         telemetryPlayer.showControls(true);
         videoPlayer.showControls(true);
     }
 
     private void lock() {
+        calculateTelemetryOffset();
+        videoPlayer.addTelemetryListener(telemetryPlayerListener);
         telemetryPlayer.showControls(false);
         telemetryPlayer.pause();
-
         videoPlayer.showControls(false);
         videoPlayer.pause();
     }
@@ -110,9 +125,12 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
         }
     }
 
-    long getOffset() {
-        // positive number indicates that gps data start after video
-        return videoPlayer.getCurrentTime() - telemetryPlayer.getCurrentTime();
+    long getTelemetryDataOffset() {
+        return telemetryDataOffset;
+    }
+
+    private void calculateTelemetryOffset(){
+        telemetryDataOffset = videoPlayer.getCurrentTime() - telemetryPlayer.getCurrentTime();
     }
 
     String getVideoFilePath() {

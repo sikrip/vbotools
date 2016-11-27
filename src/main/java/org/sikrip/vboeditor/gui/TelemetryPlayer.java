@@ -208,7 +208,11 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         }
     }
 
-    private void goTo(int position) {
+    void seekByTime(long timeMillis){
+        seekByPosition((int) (timeMillis / gpsDataIntervalMillis));
+    }
+
+    private void seekByPosition(int position) {
         currentPositionIdx = position;
         if (currentPositionIdx < 0) {
             currentPositionIdx = 0;
@@ -350,7 +354,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
 
     @Override
     public void stateChanged(ChangeEvent e) {
-        goTo(seekSlider.getValue());
+        seekByPosition(seekSlider.getValue());
     }
 
     @Override

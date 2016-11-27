@@ -182,7 +182,7 @@ public class VboEditor {
     }
 
     static int findGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
-
+        //FIXME
         final int numberOfSamples = 10;
 
         // skip some entries at the start of the data because such entries do not contain stable time info
