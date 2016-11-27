@@ -1,38 +1,28 @@
 package org.sikrip.vboeditor.gui;
 
 
-import javafx.beans.value.ObservableValue;
-import javafx.util.Duration;
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
-final class SynchronizationPanel extends JPanel implements ActionListener {
+final class SynchronizationPanel extends JPanel {
+
+    private final Logger LOGGER = LoggerFactory.getLogger(SynchronizationPanel.class);
 
     private final VideoPlayer videoPlayer;
     private final TelemetryPlayer telemetryPlayer;
-
-    private final JPanel controlsPanel;
-    private final JButton playPauseAll = new JButton("Play");
-    private final JButton prev2 = new JButton("<<");
-    private final JButton prev = new JButton("<");
-    private final JButton next = new JButton(">");
-    private final JButton next2 = new JButton(">>");
-
-    private final JCheckBox syncLock = new JCheckBox("Lock video/telemetry data");
-    private boolean playing = false;
-
-    private final VboEditorApplication application;
-
-    private javafx.beans.value.ChangeListener<Duration> telemetryPlayerListener;
-
+    private InvalidationListener telemetryPlayerListener;
     // positive number indicates that gps data start after video
     private long telemetryDataOffset;
 
-    SynchronizationPanel(VboEditorApplication application) {
-        this.application = application;
+    private final VboEditorApplication editor;
+
+    SynchronizationPanel(VboEditorApplication editor) {
+        this.editor = editor;
         setLayout(new BorderLayout());
 
         videoPlayer = new VideoPlayer(this);
@@ -41,96 +31,50 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
         final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, videoPlayer, telemetryPlayer);
         add(splitPane, BorderLayout.CENTER);
 
-        final JPanel southPanel = new JPanel();
-        southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.X_AXIS));
-        southPanel.add(syncLock);
-        syncLock.setEnabled(false);
-
-        controlsPanel = new JPanel();
-        controlsPanel.add(prev2);
-        controlsPanel.add(prev);
-        controlsPanel.add(playPauseAll);
-        controlsPanel.add(next);
-        controlsPanel.add(next2);
-        controlsPanel.setVisible(false);
-
-        southPanel.add(controlsPanel);
-
-        add(southPanel, BorderLayout.SOUTH);
-
-        syncLock.addActionListener(this);
-        prev2.addActionListener(this);
-        prev.addActionListener(this);
-        next.addActionListener(this);
-        next2.addActionListener(this);
-        playPauseAll.addActionListener(this);
-
         videoPlayer.setPreferredSize(new Dimension(450, 300));
         telemetryPlayer.setPreferredSize(new Dimension(350, 300));
 
-        telemetryPlayerListener = new javafx.beans.value.ChangeListener<Duration>() {
+        telemetryPlayerListener = new InvalidationListener() {
             @Override
-            public void changed(ObservableValue<? extends Duration> observable, Duration oldValue, Duration newValue) {
-                telemetryPlayer.seekByTime((long) newValue.toMillis() - telemetryDataOffset);
+            public void invalidated(Observable observable) {
+                telemetryPlayer.seekByTime(videoPlayer.getCurrentTime() - telemetryDataOffset);
             }
         };
     }
 
-    private void playPause() {
-        videoPlayer.playPause();
-        playing = !playing;
-
-        playPauseAll.setText(playing ? "Pause" : "Play");
-
-        prev2.setEnabled(!playing);
-        prev.setEnabled(!playing);
-        next.setEnabled(!playing);
-        next2.setEnabled(!playing);
-    }
-
-    private void toggleLock() {
-        if (syncLock.isSelected()) {
-            lock();
-            application.appendLog(String.format("Offset is %sms", getTelemetryDataOffset()));
-        } else {
-            unlock();
-        }
-        application.enableIntegrationAction(syncLock.isSelected());
-        controlsPanel.setVisible(syncLock.isSelected());
-    }
-
-    private void unlock() {
-        forcePause();
-        videoPlayer.removeTelemetryListener(telemetryPlayerListener);
-        telemetryPlayer.showControls(true);
-        videoPlayer.showControls(true);
-    }
-
-    private void lock() {
-        calculateTelemetryOffset();
-        videoPlayer.addTelemetryListener(telemetryPlayerListener);
-        telemetryPlayer.showControls(false);
-        telemetryPlayer.pause();
-        videoPlayer.showControls(false);
+    void pause() {
         videoPlayer.pause();
     }
 
-    void checkCanLock(){
-        syncLock.setEnabled(videoPlayer.isLoaded() && telemetryPlayer.isLoaded());
+    void unlock() {
+        videoPlayer.removePlayListener(telemetryPlayerListener);
+        telemetryPlayer.enableControls(true);
     }
 
-    void forcePause() {
-        if (playing) {
-            playPause();
+    void lock() {
+        calculateTelemetryOffset();
+        videoPlayer.addPlayListener(telemetryPlayerListener);
+        telemetryPlayer.enableControls(false);
+    }
+
+    void stepTelemetry(long amount) {
+        if (editor.isDataLocked()) {
+            telemetryPlayer.seekByTime(videoPlayer.getCurrentTime() - telemetryDataOffset + amount);
         }
+    }
+
+    void seekTelemetryByTime(long time) {
+        if (editor.isDataLocked()) {
+            telemetryPlayer.seekByTime(time - telemetryDataOffset);
+        }
+    }
+
+    boolean checkCanLock() {
+        return videoPlayer.isLoaded() && telemetryPlayer.isLoaded();
     }
 
     long getTelemetryDataOffset() {
         return telemetryDataOffset;
-    }
-
-    private void calculateTelemetryOffset(){
-        telemetryDataOffset = videoPlayer.getCurrentTime() - telemetryPlayer.getCurrentTime();
     }
 
     String getVideoFilePath() {
@@ -141,25 +85,10 @@ final class SynchronizationPanel extends JPanel implements ActionListener {
         return telemetryPlayer.getFilePath();
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        final Object source = e.getSource();
-        if (source == syncLock) {
-            toggleLock();
-        } else if (source == playPauseAll) {
-            playPause();
-        } else if (source == prev2) {
-            videoPlayer.step(-100);
-            telemetryPlayer.step(-2);
-        } else if (source == prev) {
-            videoPlayer.step(-50);
-            telemetryPlayer.step(-1);
-        } else if (source == next) {
-            videoPlayer.step(50);
-            telemetryPlayer.step(1);
-        } else if (source == next2) {
-            videoPlayer.step(100);
-            telemetryPlayer.step(2);
-        }
+    private void calculateTelemetryOffset() {
+        telemetryDataOffset = videoPlayer.getCurrentTime() - telemetryPlayer.getCurrentTime();
+        LOGGER.debug("Video time is {}", videoPlayer.getCurrentTime());
+        LOGGER.debug("Telemetry time is {}", telemetryPlayer.getCurrentTime());
+        LOGGER.debug("Offset is {}", telemetryDataOffset);
     }
 }

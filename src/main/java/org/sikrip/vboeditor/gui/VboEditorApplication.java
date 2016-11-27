@@ -24,6 +24,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private final JTextField outputDirPath = new JTextField();
     private final JButton outputDirChoose = new JButton("...");
     private final JTextField sessionName = new JTextField();
+    private final JCheckBox syncLock = new JCheckBox("Lock video / telemetry data");
     private final JButton performIntegration = new JButton("Integrate telemetry / video data");
 
     private final JTextArea logText = new JTextArea();
@@ -79,6 +80,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         southPanel.add(panel, BorderLayout.NORTH);
 
         panel = new JPanel();
+        panel.add(syncLock);
         panel.add(performIntegration);
         performIntegration.setEnabled(false);
         southPanel.add(panel, BorderLayout.CENTER);
@@ -97,6 +99,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private void addActionListeners() {
         outputDirChoose.addActionListener(this);
         performIntegration.addActionListener(this);
+        syncLock.addActionListener(this);
     }
 
     private void chooseOutputDirectory() {
@@ -133,7 +136,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private void integrateGpsAndVideo() {
 
         try {
-            synchronizationPanel.forcePause();
+            synchronizationPanel.pause();
 
             final String outputDir = outputDirPath.getText();
             final String vboFilePath = synchronizationPanel.getTelemetryFilePath();
@@ -200,7 +203,11 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         }
     }
 
-    void appendLog(String log) {
+    boolean isDataLocked(){
+        return syncLock.isSelected();
+    }
+
+    private void appendLog(String log) {
         logText.append(log);
         logText.append("\n");
     }
@@ -226,10 +233,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         return aboutPanel;
     }
 
-    void enableIntegrationAction(boolean enable) {
-        performIntegration.setEnabled(enable);
-    }
-
     @Override
     public void actionPerformed(ActionEvent e) {
         final Object source = e.getSource();
@@ -238,7 +241,31 @@ final class VboEditorApplication extends JFrame implements ActionListener {
             chooseOutputDirectory();
         } else if (source == performIntegration) {
             integrateGpsAndVideo();
+        } else if (source == syncLock) {
+            toggleSyncLock();
         }
+    }
+
+    /*private void playPause() {
+        videoPlayer.playPause();
+        playing = !playing;
+
+        playPauseAll.setText(playing ? "Pause" : "Play");
+
+        prev2.setEnabled(!playing);
+        prev.setEnabled(!playing);
+        next.setEnabled(!playing);
+        next2.setEnabled(!playing);
+    }*/
+
+    private void toggleSyncLock() {
+        if (syncLock.isSelected()) {
+            synchronizationPanel.lock();
+            appendLog(String.format("Offset is %sms", synchronizationPanel.getTelemetryDataOffset()));
+        } else {
+            synchronizationPanel.unlock();
+        }
+        performIntegration.setEnabled(syncLock.isSelected());
     }
 
     public static void main(String[] args) {

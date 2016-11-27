@@ -10,6 +10,8 @@ import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.util.Duration;
 import org.sikrip.vboeditor.helper.TimeHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -20,10 +22,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
 
 final class VideoPlayer extends JPanel implements ActionListener, ChangeListener {
+
+    private final Logger LOGGER = LoggerFactory.getLogger(VideoPlayer.class);
 
     private static final double MAX_DURATION_FETCH_ATTEMPTS = 5;
     private final JButton fileChoose = new JButton("...");
@@ -31,6 +36,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
 
     private final SynchronizationPanel synchronizationPanel;
     private MediaPlayer mediaPlayer;
+    private final java.util.List<InvalidationListener> playListeners = new ArrayList<>();
     private final JFXPanel videoPanel;
 
     private final JPanel controlsPanel = new JPanel(new BorderLayout());
@@ -103,10 +109,40 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
             mediaView.setFitWidth(scene.getWidth());
             mediaView.setFitHeight(scene.getHeight());
 
-            mediaPlayer.currentTimeProperty().addListener(new InvalidationListener() {
+            playListeners.add(new InvalidationListener() {
                 @Override
                 public void invalidated(Observable observable) {
                     updateTimeLabel();
+                }
+            });
+
+            final ChangeListener seekSliderListener = this;
+            mediaPlayer.setOnPlaying(new Runnable() {
+                @Override
+                public void run() {
+                    seekSlider.removeChangeListener(seekSliderListener);
+                    playPause.setText("Pause");
+                    seekSlider.setEnabled(false);
+                    enableFileControls(false);
+                    enableSeekControls(false);
+                }
+            });
+
+            mediaPlayer.setOnPaused(new Runnable() {
+                @Override
+                public void run() {
+                    for (InvalidationListener playListener : playListeners) {
+                        mediaPlayer.currentTimeProperty().removeListener(playListener);
+                    }
+                    long currentTime = getCurrentTime();
+                    synchronizationPanel.seekTelemetryByTime(currentTime);
+                    seekSlider.setValue((int) (currentTime / 1000));
+                    playPause.setText("Play");
+                    seekSlider.setEnabled(true);
+                    enableFileControls(true);
+                    enableSeekControls(true);
+
+                    seekSlider.addChangeListener(seekSliderListener);
                 }
             });
 
@@ -140,15 +176,8 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         } catch (Exception e) {
             // cannot setup the slider for this video
             seekSlider.setVisible(false);
+            LOGGER.error("Cannot setup slider", e);
         }
-    }
-
-    private void play() {
-        mediaPlayer.play();
-        playPause.setText("Pause");
-        seekSlider.setVisible(false);
-        enableFileControls(false);
-        enableSeekControls(false);
     }
 
     private void enableFileControls(boolean b) {
@@ -158,7 +187,6 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
 
     private void reset() {
         mediaPlayer.stop();
-        playPause.setText("Play");
         seekSlider.setValue(0);
         enableSeekControls(true);
     }
@@ -193,7 +221,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         }
     }
 
-    void playPause() {
+    private void playPause() {
         final MediaPlayer.Status status = mediaPlayer.getStatus();
         if (MediaPlayer.Status.PLAYING.equals(status)) {
             pause();
@@ -202,35 +230,38 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         }
     }
 
-    void pause() {
-        if (mediaPlayer != null) {
-            mediaPlayer.pause();
-            playPause.setText("Play");
-            seekSlider.setVisible(true);
-            seekSlider.setValue((int) mediaPlayer.getCurrentTime().toSeconds());
-            enableFileControls(true);
-            enableSeekControls(true);
+    private void play() {
+        for (InvalidationListener playListener : playListeners) {
+            mediaPlayer.currentTimeProperty().addListener(playListener);
         }
+        mediaPlayer.play();
     }
 
-    void showControls(boolean show) {
-        controlsPanel.setVisible(show);
-    }
-
-    long getCurrentTime() {
-        return (long) mediaPlayer.getCurrentTime().toMillis();
+    void pause() {
+        if (mediaPlayer != null && !MediaPlayer.Status.PAUSED.equals(mediaPlayer.getStatus())) {
+            mediaPlayer.pause();
+        }
     }
 
     String getFilePath() {
         return filePath.getText();
     }
 
-    void step(double durationMillis) {
+    private void step(long durationMillis) {
         if (durationMillis < 0) {
             mediaPlayer.seek(mediaPlayer.getCurrentTime().subtract(new Duration(Math.abs(durationMillis))));
         } else {
             mediaPlayer.seek(mediaPlayer.getCurrentTime().add(new Duration(durationMillis)));
         }
+        updateTimeLabel();
+        synchronizationPanel.stepTelemetry(durationMillis);
+    }
+
+    private void seek() {
+        long newTime = seekSlider.getValue() * 1000;
+        mediaPlayer.seek(new Duration(newTime));
+        updateTimeLabel();
+        synchronizationPanel.seekTelemetryByTime(newTime);
     }
 
     boolean isLoaded() {
@@ -258,13 +289,19 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         }
     }
 
-    private void seek() {
-        mediaPlayer.seek(new Duration(seekSlider.getValue() * 1000));
-        updateTimeLabel();
+    private void updateTimeLabel() {
+        long currentTime = getCurrentTime();
+        timeLabel.setText("Time: " + TimeHelper.getTimeString(currentTime));
+
+        // We need seconds here. Also this assumes that no change listener is added in the slider.
+        seekSlider.setValue((int)(currentTime/1000));
     }
 
-    private void updateTimeLabel() {
-        timeLabel.setText("Time: " + TimeHelper.getTimeString((long) mediaPlayer.getCurrentTime().toMillis()));
+    long getCurrentTime() {
+        if (mediaPlayer == null) {
+            return 0;
+        }
+        return (long) ((mediaPlayer.getCurrentTime().toMillis() * 1000) / 1000);
     }
 
     @Override
@@ -274,11 +311,11 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         }
     }
 
-    void addTelemetryListener(javafx.beans.value.ChangeListener<Duration> telemetryPlayerListener) {
-        mediaPlayer.currentTimeProperty().addListener(telemetryPlayerListener);
+    void addPlayListener(InvalidationListener listener) {
+        playListeners.add(listener);
     }
 
-    void removeTelemetryListener(javafx.beans.value.ChangeListener<Duration> telemetryPlayerListener) {
-        mediaPlayer.currentTimeProperty().removeListener(telemetryPlayerListener);
+    void removePlayListener(InvalidationListener listener) {
+        playListeners.remove(listener);
     }
 }
