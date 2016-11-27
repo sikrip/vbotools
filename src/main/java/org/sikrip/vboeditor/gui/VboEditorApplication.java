@@ -11,7 +11,7 @@ import java.io.File;
 
 final class VboEditorApplication extends JFrame implements ActionListener {
 
-    private final static String VERSION_TAG = "0.6Beta";
+    private final static String VERSION_TAG = "0.7Beta";
 
     private static final String APP_TITLE = "Vbo Tools";
 
@@ -27,8 +27,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private final JCheckBox syncLock = new JCheckBox("Lock video / telemetry data");
     private final JButton performIntegration = new JButton("Integrate telemetry / video data");
 
-    private final JTextArea logText = new JTextArea();
-
     private VboEditorApplication() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
         waitDialog = new JDialog(this, true);
@@ -38,7 +36,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
         waitDialog.getContentPane().add(new JLabel("<html><h2>Working, please wait...</h2></html>"));
 
-        telemetryVideoIntegrationPanel.setPreferredSize(new Dimension(840, 580));
+        telemetryVideoIntegrationPanel.setPreferredSize(new Dimension(840, 460));
         telemetryVideoIntegrationPanel.add(synchronizationPanel, BorderLayout.CENTER);
         telemetryVideoIntegrationPanel.add(createSouthPanel(), BorderLayout.SOUTH);
 
@@ -84,12 +82,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         panel.add(performIntegration);
         performIntegration.setEnabled(false);
         southPanel.add(panel, BorderLayout.CENTER);
-
-        logText.setEditable(false);
-        final JScrollPane logScroll = new JScrollPane(logText);
-        logScroll.setPreferredSize(new Dimension(600, 100));
-        logScroll.setBorder(BorderFactory.createTitledBorder("Log"));
-        southPanel.add(logScroll, BorderLayout.SOUTH);
 
         southPanel.setBorder(BorderFactory.createEtchedBorder());
 
@@ -163,8 +155,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                         JOptionPane.showMessageDialog(messageDialogParent, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
                         return null;
                     }
-                    appendLog("Vbo and video files created under " + outputDir + "/" + sessionName);
-                    appendLog("\n");
                     JOptionPane.showMessageDialog(messageDialogParent,
                             "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
                     return null;
@@ -203,13 +193,8 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         }
     }
 
-    boolean isDataLocked(){
+    boolean isDataLocked() {
         return syncLock.isSelected();
-    }
-
-    private void appendLog(String log) {
-        logText.append(log);
-        logText.append("\n");
     }
 
     private JPanel createAboutPanel() {
@@ -246,22 +231,9 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         }
     }
 
-    /*private void playPause() {
-        videoPlayer.playPause();
-        playing = !playing;
-
-        playPauseAll.setText(playing ? "Pause" : "Play");
-
-        prev2.setEnabled(!playing);
-        prev.setEnabled(!playing);
-        next.setEnabled(!playing);
-        next2.setEnabled(!playing);
-    }*/
-
     private void toggleSyncLock() {
         if (syncLock.isSelected()) {
             synchronizationPanel.lock();
-            appendLog(String.format("Offset is %sms", synchronizationPanel.getTelemetryDataOffset()));
         } else {
             synchronizationPanel.unlock();
         }
