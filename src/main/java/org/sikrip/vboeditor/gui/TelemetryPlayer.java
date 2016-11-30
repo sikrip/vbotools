@@ -295,7 +295,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
 
     }
 
-    private void enableFileControls(boolean b) {
+    void enableFileControls(boolean b) {
         fileChoose.setEnabled(b);
         filePath.setEnabled(b);
     }

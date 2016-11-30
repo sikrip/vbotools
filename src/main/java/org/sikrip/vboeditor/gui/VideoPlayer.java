@@ -139,7 +139,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
                     seekSlider.setValue((int) (currentTime / 1000));
                     playPause.setText("Play");
                     seekSlider.setEnabled(true);
-                    enableFileControls(true);
+                    enableFileControls(!synchronizationPanel.isDataLocked());
                     enableSeekControls(true);
 
                     seekSlider.addChangeListener(seekSliderListener);
@@ -180,7 +180,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         }
     }
 
-    private void enableFileControls(boolean b) {
+    void enableFileControls(boolean b) {
         fileChoose.setEnabled(b);
         filePath.setEnabled(b);
     }

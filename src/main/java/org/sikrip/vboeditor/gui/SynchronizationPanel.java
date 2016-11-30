@@ -49,6 +49,8 @@ final class SynchronizationPanel extends JPanel {
 
     void unlock() {
         videoPlayer.removePlayListener(telemetryPlayerListener);
+        videoPlayer.enableFileControls(true);
+        telemetryPlayer.enableFileControls(true);
         telemetryPlayer.enableControls(true);
     }
 
@@ -56,6 +58,8 @@ final class SynchronizationPanel extends JPanel {
         calculateTelemetryOffset();
         videoPlayer.addPlayListener(telemetryPlayerListener);
         telemetryPlayer.enableControls(false);
+        videoPlayer.enableFileControls(false);
+        telemetryPlayer.enableFileControls(false);
     }
 
     void stepTelemetry(long amount) {
@@ -72,6 +76,10 @@ final class SynchronizationPanel extends JPanel {
 
     void checkCanLock() {
         editor.enableDataLock(videoPlayer.isLoaded() && telemetryPlayer.isLoaded());
+    }
+
+    boolean isDataLocked(){
+        return editor.isDataLocked();
     }
 
     long getTelemetryDataOffset() {
