@@ -12,7 +12,7 @@ public class VboEditor {
 
     private static final String VIDEO_FILE_SUFFIX = "0001";
     private static final String NO_VIDEO_SYNCH_TIME = "-00000001";
-    private final static String[] DATA_SEPARATORS = {" ", ",", "\t"};
+    private final static String[] DATA_SEPARATORS = { " ", ",", "\t" };
     private static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
     private static final String HEADER_KEY = "[header]";
     private static final String DATA_KEY = "[data]";
@@ -35,7 +35,7 @@ public class VboEditor {
         if (Strings.isNullOrEmpty(dataSeparator)) {
             throw new IllegalArgumentException("Cannot determine data separator (check vbo file for corruption)");
         }
-        final int gpsDataInterval = findGpsDataInterval(vboSections, dataSeparator);
+        final int gpsDataInterval = getGpsDataInterval(vboSections, dataSeparator);
 
         final List<String> header = vboSections.get(HEADER_KEY);
         final int timeIdx = header.indexOf("time");
@@ -50,21 +50,12 @@ public class VboEditor {
             if (Integer.valueOf(data[satellitesIdx]) > 0) {
                 Double latitude = Double.valueOf(data[latitudeIdx]);
                 Double longitude = Double.valueOf(data[longitudeIdx]);
-                long time = getTime(data[timeIdx]);
+                long time = convertToMillis(data[timeIdx]);
                 Double speed = Double.valueOf(data[speedIdx]);
                 coordinates.add(new TraveledRouteCoordinate(latitude, longitude, time, speed, gpsDataInterval));
             }
         }
         return coordinates;
-    }
-
-    private static long getTime(String time) {
-        // Time: This is UTC time since midnight in the form HH:MM:SS.SS,
-        final long hh = Long.valueOf(time.substring(0, 2));
-        final long mm = Long.valueOf(time.substring(2, 4));
-        final long ss = Long.valueOf(time.substring(4, 6));
-        final long millis = Long.valueOf(time.substring(7, 9)) * 10;
-        return millis + ss * 1000 + mm * 60 * 1000 + hh * 60 * 60 * 1000;
     }
 
     /**
@@ -74,11 +65,13 @@ public class VboEditor {
      * @param originalVideoPath the path of the original file video
      * @param sessionName       the name of the session
      */
-    public static void createVideoFile(String outputDirBasePath, String originalVideoPath, String sessionName) throws IOException {
+    public static void createVideoFile(String outputDirBasePath, String originalVideoPath, String sessionName)
+            throws IOException {
         if (createOutputDirectory(outputDirBasePath + "/" + sessionName)) {
             final String videoExtension = originalVideoPath.substring(originalVideoPath.lastIndexOf('.'));
             final File sourceVideo = new File(originalVideoPath);
-            final File finalVideo = new File(outputDirBasePath + "/" + sessionName + "/" + sessionName + VIDEO_FILE_SUFFIX + videoExtension);
+            final File finalVideo = new File(
+                    outputDirBasePath + "/" + sessionName + "/" + sessionName + VIDEO_FILE_SUFFIX + videoExtension);
             FileUtils.copyFile(sourceVideo, finalVideo);
         } else {
             throw new RuntimeException("Could not create output directory");
@@ -100,14 +93,15 @@ public class VboEditor {
      * @throws IOException if a file related error occurs
      */
     public static void createVboWithVideoMetadata(String outputDirBasePath, String originalVboPath,
-                                                  VideoType videoType, String sessionName, int gpsDataOffset)
+            VideoType videoType, String sessionName, int gpsDataOffset)
             throws IOException {
 
         final Map<String, List<String>> vboSections = readVboSections(originalVboPath);
 
         final List<String> headerData = vboSections.get(HEADER_KEY);
         if (headerData.contains("avifileindex") || headerData.contains("avisynctime")) {
-            throw new IllegalArgumentException("Source vbo file already contains video information, please select a file without video information.");
+            throw new IllegalArgumentException(
+                    "Source vbo file already contains video information, please select a file without video information.");
         }
 
         // add entries in header
@@ -116,13 +110,15 @@ public class VboEditor {
 
         final String dataSeparator = getDataSeparator(vboSections);
         if (Strings.isNullOrEmpty(dataSeparator)) {
-            throw new RuntimeException(String.format("Could not find data separator. Supported separators are %s", DATA_SEPARATORS));
+            throw new RuntimeException(
+                    String.format("Could not find data separator. Supported separators are %s", DATA_SEPARATORS));
         }
 
         // add column names
         final List<String> columnNamesSection = vboSections.get("[column names]");
         if (columnNamesSection != null && !columnNamesSection.isEmpty()) {
-            columnNamesSection.set(0, columnNamesSection.get(0) + dataSeparator + "avifileindex" + dataSeparator + "avisynctime");
+            columnNamesSection
+                    .set(0, columnNamesSection.get(0) + dataSeparator + "avifileindex" + dataSeparator + "avisynctime");
         }
 
         // add avi section
@@ -130,7 +126,7 @@ public class VboEditor {
 
         // add video metadata
         final List<String> dataLines = vboSections.get(DATA_KEY);
-        final int gpsDataInterval = findGpsDataInterval(vboSections, dataSeparator);
+        final int gpsDataInterval = getGpsDataInterval(vboSections, dataSeparator);
 
         int logLine = 0;
         int numberOfInvalidLogLines = 0;
@@ -141,7 +137,8 @@ public class VboEditor {
             firstValidOffset = Math.abs(gpsDataOffset) % gpsDataInterval;
             for (; logLine < numberOfInvalidLogLines; logLine++) {
                 final String initialData = dataLines.get(logLine);
-                final String finalData = initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + NO_VIDEO_SYNCH_TIME;
+                final String finalData =
+                        initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + NO_VIDEO_SYNCH_TIME;
                 dataLines.set(logLine, finalData);
             }
         }
@@ -155,14 +152,17 @@ public class VboEditor {
             } else {
                 logLineOffsetMS = gpsDataOffset + logLine * gpsDataInterval;
             }
-            final String finalData = String.format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d", logLineOffsetMS);
+            final String finalData = String
+                    .format(initialData + dataSeparator + VIDEO_FILE_SUFFIX + dataSeparator + "%1$08d",
+                            logLineOffsetMS);
             dataLines.set(logLine, finalData);
         }
 
         // Create the final vbo file
         if (createOutputDirectory(outputDirBasePath + "/" + sessionName)) {
             try (final BufferedWriter writer = new BufferedWriter(
-                    new FileWriter(outputDirBasePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
+                    new FileWriter(
+                            outputDirBasePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
                 writer.write(String.format("File created on %s using VBO Editor", new Date()));
                 writer.newLine();
                 writeSection(vboSections, writer, HEADER_KEY);
@@ -181,7 +181,14 @@ public class VboEditor {
         }
     }
 
-    static int findGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
+    /**
+     * Gets the data sampling interval in milliseconds for the provided gps data.
+     *
+     * @param vboFileSections the gps data
+     * @param dataSeparator   the separator of the gps data
+     * @return the data sampling interval of the gps data
+     */
+    static int getGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
         //FIXME
         final int numberOfSamples = 10;
 
@@ -189,33 +196,35 @@ public class VboEditor {
         final int entriesToSkip = 10;
 
         if (vboFileSections.get(DATA_KEY).size() < entriesToSkip + numberOfSamples) {
-            throw new RuntimeException("Data sample to small");
+            throw new IllegalArgumentException("Data sample to small");
         }
 
         final int timeColumnIdx = vboFileSections.get(HEADER_KEY).indexOf("time");
 
-        Double time = null;
-        Double sumOfIntervals = 0.0;
+        long time = -1;
+        long sumOfIntervals = 0;
         for (int i = entriesToSkip; i < entriesToSkip + numberOfSamples; i++) {
-            Double currentTime = Double.valueOf(vboFileSections.get(DATA_KEY).get(i).split(dataSeparator)[timeColumnIdx]);
 
-            if (time != null) {
+            long currentTime = convertToMillis(
+                    vboFileSections.get(DATA_KEY).get(i).split(dataSeparator)[timeColumnIdx]);
+
+            if (time != -1) {
                 sumOfIntervals += currentTime - time;
             }
             time = currentTime;
         }
 
-        // convert to millis
-        Double intervalMillis = 1000 * (sumOfIntervals / (numberOfSamples - 1));
+        // find mean interval
+        long intervalMillis = sumOfIntervals / (numberOfSamples - 1);
 
-        int intervals[] = {1000/*1hz*/, 200/*5hz*/, 100/*10hz*/, 50/*20hz*/};
+        int intervals[] = { 1000/*1hz*/, 200/*5hz*/, 100/*10hz*/, 50/*20hz*/ };
 
-        int diffsPerInterval[] = {Math.abs(1000 - intervalMillis.intValue()),
-                Math.abs(200 - intervalMillis.intValue()),
-                Math.abs(100 - intervalMillis.intValue()),
-                Math.abs(50 - intervalMillis.intValue())};
+        long diffsPerInterval[] = { Math.abs(1000L - intervalMillis),
+                Math.abs(200L - intervalMillis),
+                Math.abs(100L - intervalMillis),
+                Math.abs(50L - intervalMillis) };
 
-        int minDiff = diffsPerInterval[0];
+        long minDiff = diffsPerInterval[0];
         int minDiffIdx = 0;
         for (int i = 1; i < diffsPerInterval.length; i++) {
             if (diffsPerInterval[i] < minDiff) {
@@ -239,7 +248,26 @@ public class VboEditor {
         }
     }
 
-    private static void writeSection(Map<String, List<String>> vboSections, BufferedWriter writer, String sectionName) throws IOException {
+    /**
+     * Converts the vbo format of time (UTC time since midnight in the form HH:MM:SS.SS) to milliseconds.
+     *
+     * @param time the time in the format used by the vbo files
+     * @return the equivalent time in milliseconds
+     */
+    private static long convertToMillis(String time) {
+        // Time: This is UTC time since midnight in the form HH:MM:SS.SS,
+        if (time.length() != 9) {
+            throw new IllegalArgumentException(String.format("Unexpected VBO time value %s", time));
+        }
+        final long hh = Long.valueOf(time.substring(0, 2));
+        final long mm = Long.valueOf(time.substring(2, 4));
+        final long ss = Long.valueOf(time.substring(4, 6));
+        final long millis = Long.valueOf(time.substring(7, 9)) * 10;
+        return millis + ss * 1000 + mm * 60 * 1000 + hh * 60 * 60 * 1000;
+    }
+
+    private static void writeSection(Map<String, List<String>> vboSections, BufferedWriter writer, String sectionName)
+            throws IOException {
         if (vboSections.containsKey(sectionName)) {
             writer.write(sectionName);
             writer.newLine();
@@ -261,7 +289,8 @@ public class VboEditor {
         return null;
     }
 
-    private static void readAllSections(BufferedReader vboReader, String sectionName, Map<String, List<String>> vboFileSections) throws IOException {
+    private static void readAllSections(BufferedReader vboReader, String sectionName,
+            Map<String, List<String>> vboFileSections) throws IOException {
         String vboLine;
         final List<String> sectionData = new ArrayList<>();
         while ((vboLine = vboReader.readLine()) != null) {

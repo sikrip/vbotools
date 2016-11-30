@@ -7,10 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.SimpleFormatter;
 
 import org.junit.Test;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
@@ -19,8 +17,8 @@ public class VboEditorTest {
 
     @Test
     public void verifyDataIntervalIdentification() throws IOException {
-        assertEquals(100, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample-vbo-from-dbn.vbo").getPath()), " "));
-        assertEquals(200, VboEditor.findGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath()), " "));
+        assertEquals(100, VboEditor.getGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample-vbo-from-dbn.vbo").getPath()), " "));
+        assertEquals(200, VboEditor.getGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath()), " "));
     }
 
     @Test
