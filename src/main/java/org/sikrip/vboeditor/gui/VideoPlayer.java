@@ -89,6 +89,13 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         reset.addActionListener(this);
         panel.add(reset);
 
+        prev2.setToolTipText("Two steps back");
+        prev.setToolTipText("One step back");
+        next.setToolTipText("One step forward");
+        next2.setToolTipText("Two steps forward");
+
+        reset.setToolTipText("Go to the start");
+
         seekSlider.setValue(0);
         seekSlider.addChangeListener(this);
         controlsPanel.add(timeLabel, BorderLayout.NORTH);

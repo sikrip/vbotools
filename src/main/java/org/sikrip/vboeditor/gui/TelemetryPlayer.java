@@ -84,6 +84,13 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         buttons.add(next2);
         buttons.add(reset);
 
+        prev2.setToolTipText("Two steps back");
+        prev.setToolTipText("One step back");
+        next.setToolTipText("One step forward");
+        next2.setToolTipText("Two steps forward");
+
+        reset.setToolTipText("Go to the start");
+
         final JPanel labels = new JPanel(new GridLayout(1, 2));
         labels.add(timeLabel);
         labels.add(speedLabel);
