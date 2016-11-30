@@ -27,6 +27,8 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private final JCheckBox syncLock = new JCheckBox("Lock video / telemetry data");
     private final JButton performIntegration = new JButton("Integrate video / telemetry data");
 
+    private static String browsePath = null;
+
     private VboEditorApplication() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
         waitDialog = new JDialog(this, true);
@@ -98,11 +100,23 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
     private void chooseOutputDirectory() {
         final JFileChooser fileChooser = new JFileChooser();
+        if (browsePath != null) {
+            fileChooser.setCurrentDirectory(new File(browsePath));
+        }
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             outputDirPath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            browsePath = outputDirPath.getText();
         }
+    }
+
+    static String getBrowsePath() {
+        return browsePath;
+    }
+
+    static void setBrowsePath(String browsePath) {
+        VboEditorApplication.browsePath = browsePath;
     }
 
     private VboEditor.VideoType getVideoType() {
@@ -115,14 +129,14 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         }
         final VboEditor.VideoType videoType;
         switch (videoExtension) {
-            case ".mp4":
-                videoType = VboEditor.VideoType.MP4;
-                break;
-            case ".avi":
-                videoType = VboEditor.VideoType.AVI;
-                break;
-            default:
-                throw new RuntimeException(String.format("Video of type %s is not supported", videoExtension));
+        case ".mp4":
+            videoType = VboEditor.VideoType.MP4;
+            break;
+        case ".avi":
+            videoType = VboEditor.VideoType.AVI;
+            break;
+        default:
+            throw new RuntimeException(String.format("Video of type %s is not supported", videoExtension));
         }
         return videoType;
     }
@@ -151,14 +165,17 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                 @Override
                 protected Void doInBackground() {
                     try {
-                        VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName, (int) gpsDataTotalOffsetMillis);
+                        VboEditor.createVboWithVideoMetadata(outputDir, vboFilePath, videoType, sessionName,
+                                (int) gpsDataTotalOffsetMillis);
                         VboEditor.createVideoFile(outputDir, videoFilePath, sessionName);
                     } catch (Exception e) {
-                        JOptionPane.showMessageDialog(messageDialogParent, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(messageDialogParent, e.getMessage(), "An error occurred",
+                                JOptionPane.ERROR_MESSAGE);
                         return null;
                     }
                     JOptionPane.showMessageDialog(messageDialogParent,
-                            "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!", JOptionPane.INFORMATION_MESSAGE);
+                            "Check " + outputDir + "/" + sessionName + " for video and vbo files!", "Done!",
+                            JOptionPane.INFORMATION_MESSAGE);
                     return null;
                 }
 
@@ -199,7 +216,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         return syncLock.isSelected();
     }
 
-    void enableDataLock(boolean enable){
+    void enableDataLock(boolean enable) {
         syncLock.setEnabled(enable);
     }
 
@@ -209,7 +226,8 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                 "<h2>Version " + VERSION_TAG + "</h2>" +
                 "A toolset for the .vbo telemetry format including:" +
                 "<ul>" +
-                "<li>A tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</li>" +
+                "<li>A tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</li>"
+                +
                 "<li>More to come!</li>" +
                 "</ul>" +
                 "<p>Author George Sikalias (sikrip)</p>" +

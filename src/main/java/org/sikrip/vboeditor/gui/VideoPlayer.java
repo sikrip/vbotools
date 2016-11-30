@@ -208,16 +208,22 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
 
     private void loadVideo() {
         final JFileChooser fileChooser = new JFileChooser();
+        if(VboEditorApplication.getBrowsePath()!=null){
+            fileChooser.setCurrentDirectory(new File(VboEditorApplication.getBrowsePath()));
+        }
         fileChooser.setFileFilter(new FileNameExtensionFilter(
                 "Video files", "mp4", "avi"));
 
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            File selectedFile = fileChooser.getSelectedFile();
+            filePath.setText(selectedFile.getAbsolutePath());
             loadVideoPanel();
             setupSlider();
 
             enableControls(true);
             synchronizationPanel.checkCanLock();
+
+            VboEditorApplication.setBrowsePath(selectedFile.getParent());
         }
     }
 

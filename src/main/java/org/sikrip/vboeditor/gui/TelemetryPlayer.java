@@ -1,6 +1,5 @@
 package org.sikrip.vboeditor.gui;
 
-
 import org.sikrip.vboeditor.VboEditor;
 import org.sikrip.vboeditor.helper.TimeHelper;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
@@ -14,6 +13,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -113,15 +113,21 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
 
     private void loadTelemetry() {
         final JFileChooser fileChooser = new JFileChooser();
+        if (VboEditorApplication.getBrowsePath() != null) {
+            fileChooser.setCurrentDirectory(new File(VboEditorApplication.getBrowsePath()));
+        }
         fileChooser.setFileFilter(new FileNameExtensionFilter(
                 "VBox data files", "vbo"));
 
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            filePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            File selectedFile = fileChooser.getSelectedFile();
+            filePath.setText(selectedFile.getAbsolutePath());
             paintTraveledRoute();
             setupSlider();
             enableControls(true);
             synchronizationPanel.checkCanLock();
+
+            VboEditorApplication.setBrowsePath(selectedFile.getParent());
         }
     }
 
@@ -238,7 +244,6 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
             double longitude = coordinate.getLongitude() * Math.PI / 180;
             double latitude = coordinate.getLatitude() * Math.PI / 180;
 
-
             // Actually this is not 100% acurate as it does not take into account the earth curvature
             // but for the area of a track we assume that the earth is flat
             Point2D.Double xy = new Point2D.Double(longitude, latitude);
@@ -290,7 +295,8 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
             int adjustedX = (int) (actualWidth - widthPadding - (point.getX() * globalRatio));
             int adjustedY = (int) (actualHeight - heightPadding - (point.getY() * globalRatio));
 
-            traveledRoutePoints.add(new TraveledRoutePoint(adjustedX, adjustedY, i * gpsDataIntervalMillis, coordinate.getSpeed()));
+            traveledRoutePoints.add(new TraveledRoutePoint(adjustedX, adjustedY, i * gpsDataIntervalMillis,
+                    coordinate.getSpeed()));
         }
 
     }
@@ -316,7 +322,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         }
     }
 
-    void requestPause(){
+    void requestPause() {
         playFlag.set(false);
     }
 
