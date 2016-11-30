@@ -42,8 +42,9 @@ final class SynchronizationPanel extends JPanel {
         };
     }
 
-    void pause() {
-        videoPlayer.pause();
+    void requestPause() {
+        videoPlayer.requestPause();
+        telemetryPlayer.requestPause();
     }
 
     void unlock() {
@@ -69,8 +70,8 @@ final class SynchronizationPanel extends JPanel {
         }
     }
 
-    boolean checkCanLock() {
-        return videoPlayer.isLoaded() && telemetryPlayer.isLoaded();
+    void checkCanLock() {
+        editor.enableDataLock(videoPlayer.isLoaded() && telemetryPlayer.isLoaded());
     }
 
     long getTelemetryDataOffset() {

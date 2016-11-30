@@ -165,7 +165,6 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         playPause.setText("Pause");
         enableScanControls(false);
         enableFileControls(false);
-        seekSlider.setEnabled(false);
         playFlag.set(true);
         final Thread playThread = new Thread(new Runnable() {
             @Override
@@ -317,12 +316,15 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
         }
     }
 
+    void requestPause(){
+        playFlag.set(false);
+    }
+
     void pause() {
+        requestPause();
         playPause.setText("Play");
         enableScanControls(true);
         enableFileControls(true);
-        seekSlider.setEnabled(true);
-        playFlag.set(false);
     }
 
     private void step(int amount) {

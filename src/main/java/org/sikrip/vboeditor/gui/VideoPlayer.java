@@ -224,7 +224,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
     private void playPause() {
         final MediaPlayer.Status status = mediaPlayer.getStatus();
         if (MediaPlayer.Status.PLAYING.equals(status)) {
-            pause();
+            requestPause();
         } else {
             play();
         }
@@ -237,7 +237,7 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
         mediaPlayer.play();
     }
 
-    void pause() {
+    void requestPause() {
         if (mediaPlayer != null && !MediaPlayer.Status.PAUSED.equals(mediaPlayer.getStatus())) {
             mediaPlayer.pause();
         }

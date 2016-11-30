@@ -25,7 +25,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private final JButton outputDirChoose = new JButton("...");
     private final JTextField sessionName = new JTextField();
     private final JCheckBox syncLock = new JCheckBox("Lock video / telemetry data");
-    private final JButton performIntegration = new JButton("Integrate telemetry / video data");
+    private final JButton performIntegration = new JButton("Integrate video / telemetry data");
 
     private VboEditorApplication() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
@@ -45,6 +45,8 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
         setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
         getContentPane().add(tabs);
+
+        enableDataLock(false);
     }
 
     private JPanel createSouthPanel() {
@@ -128,7 +130,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private void integrateGpsAndVideo() {
 
         try {
-            synchronizationPanel.pause();
+            synchronizationPanel.requestPause();
 
             final String outputDir = outputDirPath.getText();
             final String vboFilePath = synchronizationPanel.getTelemetryFilePath();
@@ -197,6 +199,10 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         return syncLock.isSelected();
     }
 
+    void enableDataLock(boolean enable){
+        syncLock.setEnabled(enable);
+    }
+
     private JPanel createAboutPanel() {
         final String aboutMessage = "<html>" +
                 "<h2>" + APP_TITLE + "</h2>" +
@@ -237,6 +243,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
         } else {
             synchronizationPanel.unlock();
         }
+        synchronizationPanel.requestPause();
         performIntegration.setEnabled(syncLock.isSelected());
     }
 
