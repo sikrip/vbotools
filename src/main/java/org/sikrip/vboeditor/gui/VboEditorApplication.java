@@ -1,19 +1,33 @@
 package org.sikrip.vboeditor.gui;
 
 import com.google.common.base.Strings;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.sikrip.vboeditor.VboEditor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 
 final class VboEditorApplication extends JFrame implements ActionListener {
 
-    private final static String VERSION_TAG = "0.7Beta";
+    private final static Logger LOGGER = LoggerFactory.getLogger(VboEditorApplication.class);
+
+    private final static String VERSION_TAG = "0.9beta";
 
     private static final String APP_TITLE = "Vbo Tools";
+    private static final String VERSION_URL = "http://www.vbotools.com/version";
+    private static final String VERSION_START = "version-start:";
+    private static final String VERSION_END = ":version-end";
 
     private final JTabbedPane tabs = new JTabbedPane();
     private final JPanel telemetryVideoIntegrationPanel = new JPanel(new BorderLayout());
@@ -268,6 +282,11 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                try {
+                    checkVersion();
+                } catch (Exception e) {
+                    LOGGER.error("Could not get the current version number", e);
+                }
                 final VboEditorApplication editorGui = new VboEditorApplication();
                 editorGui.createGui();
                 editorGui.addActionListeners();
@@ -278,5 +297,35 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                 editorGui.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             }
         });
+    }
+
+    private static void checkVersion() throws IOException {
+        CloseableHttpResponse response = null;
+        try {
+            CloseableHttpClient httpclient = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet(VERSION_URL);
+            response = httpclient.execute(httpGet);
+
+            HttpEntity entity = response.getEntity();
+
+            final String content = EntityUtils.toString(entity);
+
+            final int start = content.indexOf(VERSION_START) + VERSION_START.length();
+            final int end = content.indexOf(VERSION_END);
+
+            final String latestVersionTag = content.substring(start, end).toLowerCase();
+            EntityUtils.consume(entity);
+
+            if(!VERSION_TAG.toLowerCase().equals(latestVersionTag)){
+                JOptionPane.showMessageDialog(null,
+                        "You are using an old version, check www.vbotools.com for the latest version.",
+                        "Update your version",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+        }
     }
 }
