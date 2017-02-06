@@ -6,7 +6,7 @@
 
     <groupId>org.sikrip</groupId>
     <artifactId>vbotools</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>none</version>
 
     <properties>
         <junit.version>4.12</junit.version>
