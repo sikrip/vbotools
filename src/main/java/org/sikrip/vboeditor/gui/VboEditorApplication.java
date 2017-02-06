@@ -22,7 +22,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(VboEditorApplication.class);
 
-    private final static String VERSION_TAG = "0.9beta";
+    private final static String VERSION_TAG = "0.91beta";
 
     private static final String APP_TITLE = "Vbo Tools";
     private static final String VERSION_URL = "http://www.vbotools.com/version";
@@ -318,7 +318,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
             if(!VERSION_TAG.toLowerCase().equals(latestVersionTag)){
                 JOptionPane.showMessageDialog(null,
-                        "You are using an old version, check www.vbotools.com for the latest version.",
+                        String.format("New version (%s) is available get it from www.vbotools.com.", latestVersionTag),
                         "Update your version",
                         JOptionPane.INFORMATION_MESSAGE);
             }

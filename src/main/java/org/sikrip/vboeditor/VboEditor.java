@@ -47,11 +47,11 @@ public class VboEditor {
         final List<TraveledRouteCoordinate> coordinates = new ArrayList<>();
         for (String dataLine : vboSections.get(DATA_KEY)) {
             final String[] data = dataLine.split(dataSeparator);
-            if (Integer.valueOf(data[satellitesIdx]) > 0) {
-                Double latitude = Double.valueOf(data[latitudeIdx]);
-                Double longitude = Double.valueOf(data[longitudeIdx]);
-                long time = convertToMillis(data[timeIdx]);
-                Double speed = Double.valueOf(data[speedIdx]);
+            final Double latitude = Double.valueOf(data[latitudeIdx]);
+            final Double longitude = Double.valueOf(data[longitudeIdx]);
+            if (Integer.valueOf(data[satellitesIdx]) > 0 && latitude != 0 && longitude != 0) {
+                final long time = convertToMillis(data[timeIdx]);
+                final Double speed = Double.valueOf(data[speedIdx]);
                 coordinates.add(new TraveledRouteCoordinate(latitude, longitude, time, speed, gpsDataInterval));
             }
         }
