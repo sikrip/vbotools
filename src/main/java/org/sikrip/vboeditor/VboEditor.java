@@ -4,18 +4,26 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
 
 public class VboEditor {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(VboEditor.class);
+
     private static final String VIDEO_FILE_SUFFIX = "0001";
     private static final String NO_VIDEO_SYNCH_TIME = "-00000001";
     private final static String[] DATA_SEPARATORS = { " ", ",", "\t" };
     private static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
-    private static final String HEADER_KEY = "[header]";
-    private static final String DATA_KEY = "[data]";
+    private static final String HEADER_SECTION = "[header]";
+    private static final String DATA_SECTION = "[data]";
+    public static final String AVI_SECTION = "[avi]";
+    public static final String COLUMN_NAMES_SECTION = "[column names]";
+    public static final String AVIFILEINDEX = "avifileindex";
+    public static final String AVISYNCTIME = "avisynctime";
 
     public enum VideoType {
         MP4, AVI
@@ -37,7 +45,7 @@ public class VboEditor {
         }
         final int gpsDataInterval = getGpsDataInterval(vboSections, dataSeparator);
 
-        final List<String> header = vboSections.get(HEADER_KEY);
+        final List<String> header = vboSections.get(HEADER_SECTION);
         final int timeIdx = header.indexOf("time");
         final int satellitesIdx = header.indexOf("satellites");
         final int latitudeIdx = header.indexOf("latitude");
@@ -45,7 +53,7 @@ public class VboEditor {
         final int speedIdx = header.indexOf("velocity kmh");
 
         final List<TraveledRouteCoordinate> coordinates = new ArrayList<>();
-        for (String dataLine : vboSections.get(DATA_KEY)) {
+        for (String dataLine : vboSections.get(DATA_SECTION)) {
             final String[] data = dataLine.split(dataSeparator);
             final Double latitude = Double.valueOf(data[latitudeIdx]);
             final Double longitude = Double.valueOf(data[longitudeIdx]);
@@ -98,16 +106,19 @@ public class VboEditor {
 
         final Map<String, List<String>> vboSections = readVboSections(originalVboPath);
 
-        final List<String> headerData = vboSections.get(HEADER_KEY);
-        if (headerData.contains("avifileindex") || headerData.contains("avisynctime")) {
-            throw new IllegalArgumentException(
-                    "Source vbo file already contains video information, please select a file without video information.");
+        final List<String> headerData = vboSections.get(HEADER_SECTION);
+        final int aviIndexPosition = headerData.indexOf(AVIFILEINDEX);
+        if (aviIndexPosition > -1) {
+            LOGGER.warn("Source vbo file already contains AVIFILEINDEX information. AVIFILEINDEX data will be replaced in the new file.");
+        } else {
+            headerData.add(AVIFILEINDEX);
         }
-
-        // add entries in header
-        headerData.add("avifileindex");
-        headerData.add("avisynctime");
-
+        final int aviSyncPosition = headerData.indexOf(AVISYNCTIME);
+        if (aviSyncPosition > -1) {
+            LOGGER.warn("Source vbo file already contains AVISYNCTIME information. AVISYNCTIME data will be replaced in the new file.");
+        } else  {
+            headerData.add(AVISYNCTIME);
+        }
         final String dataSeparator = getDataSeparator(vboSections);
         if (Strings.isNullOrEmpty(dataSeparator)) {
             throw new RuntimeException(
@@ -115,17 +126,18 @@ public class VboEditor {
         }
 
         // add column names
-        final List<String> columnNamesSection = vboSections.get("[column names]");
+        final List<String> columnNamesSection = vboSections.get(COLUMN_NAMES_SECTION);
         if (columnNamesSection != null && !columnNamesSection.isEmpty()) {
-            columnNamesSection
-                    .set(0, columnNamesSection.get(0) + dataSeparator + "avifileindex" + dataSeparator + "avisynctime");
+            // Make sure column names for video data are in place
+            final String columnNames = columnNamesSection.get(0).replaceAll(AVIFILEINDEX, "").replaceAll(AVISYNCTIME, "").trim();
+            columnNamesSection.set(0, columnNames + dataSeparator + AVIFILEINDEX + dataSeparator + AVISYNCTIME);
         }
 
         // add avi section
-        vboSections.put("[avi]", Lists.newArrayList(sessionName, videoType.name()));
+        vboSections.put(AVI_SECTION, Lists.newArrayList(sessionName, videoType.name()));
 
         // add video metadata
-        final List<String> dataLines = vboSections.get(DATA_KEY);
+        final List<String> dataLines = getDataLines(vboSections, dataSeparator, aviIndexPosition, aviSyncPosition);
         final int gpsDataInterval = getGpsDataInterval(vboSections, dataSeparator);
 
         int logLine = 0;
@@ -157,6 +169,8 @@ public class VboEditor {
                             logLineOffsetMS);
             dataLines.set(logLine, finalData);
         }
+        // Update the data section with the lines containing the video data
+        vboSections.put(DATA_SECTION, dataLines);
 
         // Create the final vbo file
         if (createOutputDirectory(outputDirBasePath + "/" + sessionName)) {
@@ -165,20 +179,40 @@ public class VboEditor {
                             outputDirBasePath + "/" + sessionName + "/" + sessionName + FINAL_VBO_FILE_SUFFIX))) {
                 writer.write(String.format("File created on %s using VBO Editor", new Date()));
                 writer.newLine();
-                writeSection(vboSections, writer, HEADER_KEY);
+                writeSection(vboSections, writer, HEADER_SECTION);
                 writeSection(vboSections, writer, "[comments]");
                 //
                 writeSection(vboSections, writer, "[channel units]");
                 writeSection(vboSections, writer, "[session data]");
                 writeSection(vboSections, writer, "[laptiming]");
                 //
-                writeSection(vboSections, writer, "[avi]");
-                writeSection(vboSections, writer, "[column names]");
-                writeSection(vboSections, writer, DATA_KEY);
+                writeSection(vboSections, writer, AVI_SECTION);
+                writeSection(vboSections, writer, COLUMN_NAMES_SECTION);
+                writeSection(vboSections, writer, DATA_SECTION);
             }
         } else {
             throw new RuntimeException("Cannot create output directory");
         }
+    }
+
+    /**
+     * Gets the data lines from the provided sections.
+     * {@link #AVIFILEINDEX} and {@link #AVISYNCTIME} are excluded.
+     */
+    private static List<String> getDataLines(Map<String, List<String>> vboSections, String separator, int aviIndexPosition, int aviSyncPosition ) {
+        final List<String> dataLinesNoVideoData = new ArrayList<>();
+        for (String line : vboSections.get(DATA_SECTION)) {
+            final StringBuilder lineBuilder = new StringBuilder();
+            final String[] dataArray = line.split(separator);
+            for (int i = 0; i < dataArray.length; i++) {
+                if (i != aviIndexPosition && i != aviSyncPosition) {
+                    // add all data except the avi related
+                    lineBuilder.append(dataArray[i]).append(separator);
+                }
+            }
+            dataLinesNoVideoData.add(lineBuilder.toString().trim());
+        }
+        return dataLinesNoVideoData;
     }
 
     /**
@@ -195,18 +229,18 @@ public class VboEditor {
         // skip some entries at the start of the data because such entries do not contain stable time info
         final int entriesToSkip = 10;
 
-        if (vboFileSections.get(DATA_KEY).size() < entriesToSkip + numberOfSamples) {
+        if (vboFileSections.get(DATA_SECTION).size() < entriesToSkip + numberOfSamples) {
             throw new IllegalArgumentException("Data sample to small");
         }
 
-        final int timeColumnIdx = vboFileSections.get(HEADER_KEY).indexOf("time");
+        final int timeColumnIdx = vboFileSections.get(HEADER_SECTION).indexOf("time");
 
         long time = -1;
         long sumOfIntervals = 0;
         for (int i = entriesToSkip; i < entriesToSkip + numberOfSamples; i++) {
 
             long currentTime = convertToMillis(
-                    vboFileSections.get(DATA_KEY).get(i).split(dataSeparator)[timeColumnIdx]);
+                    vboFileSections.get(DATA_SECTION).get(i).split(dataSeparator)[timeColumnIdx]);
 
             if (time != -1) {
                 sumOfIntervals += currentTime - time;
@@ -280,7 +314,7 @@ public class VboEditor {
     }
 
     private static String getDataSeparator(Map<String, List<String>> vboSections) {
-        String dataLine = vboSections.get(DATA_KEY).get(0);
+        String dataLine = vboSections.get(DATA_SECTION).get(0);
         for (String separator : DATA_SEPARATORS) {
             if (dataLine.split(separator).length > 0) {
                 return separator;

@@ -18,16 +18,11 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 
+import static org.sikrip.vboeditor.helper.Constants.*;
+
 final class VboEditorApplication extends JFrame implements ActionListener {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(VboEditorApplication.class);
-
-    private final static String VERSION_TAG = "0.91beta";
-
-    private static final String APP_TITLE = "Vbo Tools";
-    private static final String VERSION_URL = "http://www.vbotools.com/version";
-    private static final String VERSION_START = "version-start:";
-    private static final String VERSION_END = ":version-end";
 
     private final JTabbedPane tabs = new JTabbedPane();
     private final JPanel telemetryVideoIntegrationPanel = new JPanel(new BorderLayout());

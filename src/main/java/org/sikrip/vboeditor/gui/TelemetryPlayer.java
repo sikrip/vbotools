@@ -1,6 +1,7 @@
 package org.sikrip.vboeditor.gui;
 
 import org.sikrip.vboeditor.VboEditor;
+import org.sikrip.vboeditor.helper.ErrorHandler;
 import org.sikrip.vboeditor.helper.TimeHelper;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
 import org.sikrip.vboeditor.model.TraveledRoutePoint;
@@ -119,22 +120,27 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
     }
 
     private void loadTelemetry() {
-        final JFileChooser fileChooser = new JFileChooser();
-        if (VboEditorApplication.getBrowsePath() != null) {
-            fileChooser.setCurrentDirectory(new File(VboEditorApplication.getBrowsePath()));
-        }
-        fileChooser.setFileFilter(new FileNameExtensionFilter(
-                "VBox data files", "vbo"));
+        try {
+            final JFileChooser fileChooser = new JFileChooser();
+            if (VboEditorApplication.getBrowsePath() != null) {
+                fileChooser.setCurrentDirectory(new File(VboEditorApplication.getBrowsePath()));
+            }
+            fileChooser.setFileFilter(new FileNameExtensionFilter(
+                    "VBox data files", "vbo"));
 
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            filePath.setText(selectedFile.getAbsolutePath());
-            paintTraveledRoute();
-            setupSlider();
-            enableControls(true);
-            synchronizationPanel.checkCanLock();
+            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                filePath.setText(selectedFile.getAbsolutePath());
+                paintTraveledRoute();
+                setupSlider();
+                enableControls(true);
+                synchronizationPanel.checkCanLock();
 
-            VboEditorApplication.setBrowsePath(selectedFile.getParent());
+                VboEditorApplication.setBrowsePath(selectedFile.getParent());
+            }
+        } catch (Exception e) {
+            ErrorHandler.showError("Could not load telemetry", "Invalid .vbo file", e);
+            filePath.setText("");
         }
     }
 

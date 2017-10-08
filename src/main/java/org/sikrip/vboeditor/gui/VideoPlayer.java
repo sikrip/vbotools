@@ -9,6 +9,7 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.util.Duration;
+import org.sikrip.vboeditor.helper.ErrorHandler;
 import org.sikrip.vboeditor.helper.TimeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,23 +215,28 @@ final class VideoPlayer extends JPanel implements ActionListener, ChangeListener
     }
 
     private void loadVideo() {
-        final JFileChooser fileChooser = new JFileChooser();
-        if(VboEditorApplication.getBrowsePath()!=null){
-            fileChooser.setCurrentDirectory(new File(VboEditorApplication.getBrowsePath()));
-        }
-        fileChooser.setFileFilter(new FileNameExtensionFilter(
-                "Video files", "mp4", "avi"));
+        try {
+            final JFileChooser fileChooser = new JFileChooser();
+            if (VboEditorApplication.getBrowsePath() != null) {
+                fileChooser.setCurrentDirectory(new File(VboEditorApplication.getBrowsePath()));
+            }
+            fileChooser.setFileFilter(new FileNameExtensionFilter(
+                    "Video files", "mp4", "avi"));
 
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            filePath.setText(selectedFile.getAbsolutePath());
-            loadVideoPanel();
-            setupSlider();
+            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                filePath.setText(selectedFile.getAbsolutePath());
+                loadVideoPanel();
+                setupSlider();
 
-            enableControls(true);
-            synchronizationPanel.checkCanLock();
+                enableControls(true);
+                synchronizationPanel.checkCanLock();
 
-            VboEditorApplication.setBrowsePath(selectedFile.getParent());
+                VboEditorApplication.setBrowsePath(selectedFile.getParent());
+            }
+        } catch (Exception e) {
+            ErrorHandler.showError("Could not load video", "Invalid video file", e);
+            filePath.setText("");
         }
     }
 
