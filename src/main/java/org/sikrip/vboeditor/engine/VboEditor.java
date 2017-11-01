@@ -29,7 +29,7 @@ import static org.sikrip.vboeditor.engine.VboUtils.getDataLines;
 import static org.sikrip.vboeditor.engine.VboUtils.getDataSeparator;
 import static org.sikrip.vboeditor.engine.VboUtils.getGpsDataInterval;
 
-public class VboEditor {
+public final class VboEditor {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(VboEditor.class);
 
@@ -41,6 +41,8 @@ public class VboEditor {
     public enum VideoType {
         MP4, AVI
     }
+
+    private VboEditor() {/*hidden*/}
 
     /**
      * Gets a list of {@link TraveledRouteCoordinate}s depicting the traveled route of the given vbo file.

@@ -7,18 +7,20 @@ import java.util.Map;
 /**
  * Helper functions for the vbo file format.
  */
-public class VboUtils {
+final class VboUtils {
 
-    public static final String HEADER_SECTION = "[header]";
-    public static final String COLUMN_NAMES_SECTION = "[column names]";
-    public static final String DATA_SECTION = "[data]";
+    private VboUtils(){/*hidden*/}
 
-    public static final String[] DATA_SEPARATORS = { " ", ",", "\t" };
-    public static final String AVIFILEINDEX = "avifileindex";
-    public static final String AVISYNCTIME = "avisynctime";
+    static final String HEADER_SECTION = "[header]";
+    static final String COLUMN_NAMES_SECTION = "[column names]";
+    static final String DATA_SECTION = "[data]";
+
+    static final String[] DATA_SEPARATORS = { " ", ",", "\t" };
+    static final String AVIFILEINDEX = "avifileindex";
+    static final String AVISYNCTIME = "avisynctime";
 
 
-    public static String getDataSeparator(Map<String, List<String>> vboSections) {
+    static String getDataSeparator(Map<String, List<String>> vboSections) {
         String dataLine = vboSections.get(DATA_SECTION).get(0);
         for (String separator : DATA_SEPARATORS) {
             if (dataLine.split(separator).length > 0) {
@@ -34,7 +36,7 @@ public class VboUtils {
      * @param time the time in the format used by the vbo files
      * @return the equivalent time in milliseconds
      */
-    public static long convertToMillis(String time) {
+    static long convertToMillis(String time) {
         // Time: This is UTC time since midnight in the form HH:MM:SS.SS,
         if (time.length() != 9) {
             throw new IllegalArgumentException(String.format("Unexpected VBO time value %s", time));
@@ -53,7 +55,7 @@ public class VboUtils {
      * @param dataSeparator   the separator of the gps data
      * @return the data sampling interval of the gps data
      */
-    public static int getGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
+    static int getGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
         //FIXME
         final int numberOfSamples = 10;
 
@@ -105,7 +107,7 @@ public class VboUtils {
      * Gets the data lines from the provided sections.
      * {@link #AVIFILEINDEX} and {@link #AVISYNCTIME} are excluded.
      */
-    public static List<String> getDataLines(Map<String, List<String>> vboSections, String separator, int aviIndexPosition, int aviSyncPosition ) {
+    static List<String> getDataLines(Map<String, List<String>> vboSections, String separator, int aviIndexPosition, int aviSyncPosition ) {
         final List<String> dataLinesNoVideoData = new ArrayList<>();
         for (String line : vboSections.get(DATA_SECTION)) {
             final StringBuilder lineBuilder = new StringBuilder();

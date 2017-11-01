@@ -17,9 +17,11 @@ import java.util.Map;
 /**
  * Utils for reading and writing vbo files.
  */
-public final class VboIOUtils {
+final class VboIOUtils {
 
-    public static Map<String, List<String>> readVboSections(String vboFilePath) throws IOException {
+    private VboIOUtils() {/*hidden*/}
+
+    static Map<String, List<String>> readVboSections(String vboFilePath) throws IOException {
         try (final InputStream vboFileStream = new FileInputStream(new File(vboFilePath))) {
 
             final BufferedReader vboReader = new BufferedReader(new InputStreamReader(vboFileStream));
@@ -31,7 +33,7 @@ public final class VboIOUtils {
         }
     }
 
-    public static void writeSection(Map<String, List<String>> vboSections, BufferedWriter writer, String sectionName)
+    static void writeSection(Map<String, List<String>> vboSections, BufferedWriter writer, String sectionName)
             throws IOException {
         if (vboSections.containsKey(sectionName)) {
             writer.write(sectionName);
