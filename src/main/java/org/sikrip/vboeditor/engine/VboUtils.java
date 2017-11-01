@@ -122,4 +122,40 @@ final class VboUtils {
         }
         return dataLinesNoVideoData;
     }
+
+    static List<Double> getAccelerationData(List<String> data, String separator, int timeDataIdx, int velocityDataIdx) {
+        final List<Double> accelerationData = new ArrayList<>();
+
+        // No acceleration data for the first row of data
+        accelerationData.add(0.0);
+
+        // Calculate the acceleration for all data lines.
+        for (int i = 0; i < data.size()-1; i++) {
+            final String currentData[] = data.get(i).split(separator);
+            final String nextData[] = data.get(i+1).split(separator);;
+
+            final double velocity = Double.valueOf(currentData[velocityDataIdx]);
+            final double nextVelocity = Double.valueOf(nextData[velocityDataIdx]);
+
+            final long time = convertToMillis(currentData[timeDataIdx]);
+            final long nextTime = convertToMillis(nextData[timeDataIdx]);
+
+            final double acceleration = (nextVelocity - velocity) / (nextTime - time);
+
+            accelerationData.add(acceleration);
+        }
+        return accelerationData;
+    }
+
+    static List<Double> getBrakeChannel(List<Double> accelerationData, double maxBrake) {
+        final List<Double> brakeChannel = new ArrayList<>();
+        for (final Double acceleration : accelerationData) {
+            if (acceleration < 0.0) {
+                brakeChannel.add((maxBrake / acceleration) * 100.0);
+            } else {
+                brakeChannel.add(0.0);
+            }
+        }
+        return brakeChannel;
+    }
 }
