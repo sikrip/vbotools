@@ -1,6 +1,6 @@
 package org.sikrip.vboeditor.gui;
 
-import org.sikrip.vboeditor.VboEditor;
+import org.sikrip.vboeditor.engine.VboEditor;
 import org.sikrip.vboeditor.helper.ErrorHandler;
 import org.sikrip.vboeditor.helper.TimeHelper;
 import org.sikrip.vboeditor.model.TraveledRouteCoordinate;

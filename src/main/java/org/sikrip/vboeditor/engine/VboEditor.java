@@ -1,4 +1,4 @@
-package org.sikrip.vboeditor;
+package org.sikrip.vboeditor.engine;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -7,8 +7,27 @@ import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import static org.sikrip.vboeditor.engine.VboIOUtils.readVboSections;
+import static org.sikrip.vboeditor.engine.VboIOUtils.writeSection;
+import static org.sikrip.vboeditor.engine.VboUtils.AVIFILEINDEX;
+import static org.sikrip.vboeditor.engine.VboUtils.AVISYNCTIME;
+import static org.sikrip.vboeditor.engine.VboUtils.COLUMN_NAMES_SECTION;
+import static org.sikrip.vboeditor.engine.VboUtils.DATA_SECTION;
+import static org.sikrip.vboeditor.engine.VboUtils.DATA_SEPARATORS;
+import static org.sikrip.vboeditor.engine.VboUtils.HEADER_SECTION;
+import static org.sikrip.vboeditor.engine.VboUtils.convertToMillis;
+import static org.sikrip.vboeditor.engine.VboUtils.getDataLines;
+import static org.sikrip.vboeditor.engine.VboUtils.getDataSeparator;
+import static org.sikrip.vboeditor.engine.VboUtils.getGpsDataInterval;
 
 public class VboEditor {
 
@@ -16,14 +35,8 @@ public class VboEditor {
 
     private static final String VIDEO_FILE_SUFFIX = "0001";
     private static final String NO_VIDEO_SYNCH_TIME = "-00000001";
-    private final static String[] DATA_SEPARATORS = { " ", ",", "\t" };
     private static final String FINAL_VBO_FILE_SUFFIX = "Data.vbo";
-    private static final String HEADER_SECTION = "[header]";
-    private static final String DATA_SECTION = "[data]";
-    public static final String AVI_SECTION = "[avi]";
-    public static final String COLUMN_NAMES_SECTION = "[column names]";
-    public static final String AVIFILEINDEX = "avifileindex";
-    public static final String AVISYNCTIME = "avisynctime";
+    private static final String AVI_SECTION = "[avi]";
 
     public enum VideoType {
         MP4, AVI
@@ -192,150 +205,6 @@ public class VboEditor {
             }
         } else {
             throw new RuntimeException("Cannot create output directory");
-        }
-    }
-
-    /**
-     * Gets the data lines from the provided sections.
-     * {@link #AVIFILEINDEX} and {@link #AVISYNCTIME} are excluded.
-     */
-    private static List<String> getDataLines(Map<String, List<String>> vboSections, String separator, int aviIndexPosition, int aviSyncPosition ) {
-        final List<String> dataLinesNoVideoData = new ArrayList<>();
-        for (String line : vboSections.get(DATA_SECTION)) {
-            final StringBuilder lineBuilder = new StringBuilder();
-            final String[] dataArray = line.split(separator);
-            for (int i = 0; i < dataArray.length; i++) {
-                if (i != aviIndexPosition && i != aviSyncPosition) {
-                    // add all data except the avi related
-                    lineBuilder.append(dataArray[i]).append(separator);
-                }
-            }
-            dataLinesNoVideoData.add(lineBuilder.toString().trim());
-        }
-        return dataLinesNoVideoData;
-    }
-
-    /**
-     * Gets the data sampling interval in milliseconds for the provided gps data.
-     *
-     * @param vboFileSections the gps data
-     * @param dataSeparator   the separator of the gps data
-     * @return the data sampling interval of the gps data
-     */
-    static int getGpsDataInterval(Map<String, List<String>> vboFileSections, String dataSeparator) {
-        //FIXME
-        final int numberOfSamples = 10;
-
-        // skip some entries at the start of the data because such entries do not contain stable time info
-        final int entriesToSkip = 10;
-
-        if (vboFileSections.get(DATA_SECTION).size() < entriesToSkip + numberOfSamples) {
-            throw new IllegalArgumentException("Data sample to small");
-        }
-
-        final int timeColumnIdx = vboFileSections.get(HEADER_SECTION).indexOf("time");
-
-        long time = -1;
-        long sumOfIntervals = 0;
-        for (int i = entriesToSkip; i < entriesToSkip + numberOfSamples; i++) {
-
-            long currentTime = convertToMillis(
-                    vboFileSections.get(DATA_SECTION).get(i).split(dataSeparator)[timeColumnIdx]);
-
-            if (time != -1) {
-                sumOfIntervals += currentTime - time;
-            }
-            time = currentTime;
-        }
-
-        // find mean interval
-        long intervalMillis = sumOfIntervals / (numberOfSamples - 1);
-
-        int intervals[] = { 1000/*1hz*/, 200/*5hz*/, 100/*10hz*/, 50/*20hz*/ };
-
-        long diffsPerInterval[] = { Math.abs(1000L - intervalMillis),
-                Math.abs(200L - intervalMillis),
-                Math.abs(100L - intervalMillis),
-                Math.abs(50L - intervalMillis) };
-
-        long minDiff = diffsPerInterval[0];
-        int minDiffIdx = 0;
-        for (int i = 1; i < diffsPerInterval.length; i++) {
-            if (diffsPerInterval[i] < minDiff) {
-                minDiff = diffsPerInterval[i];
-                minDiffIdx = i;
-            }
-        }
-
-        return intervals[minDiffIdx];
-    }
-
-    static Map<String, List<String>> readVboSections(String vboFilePath) throws IOException {
-        try (final InputStream vboFileStream = new FileInputStream(new File(vboFilePath))) {
-
-            final BufferedReader vboReader = new BufferedReader(new InputStreamReader(vboFileStream));
-            final Map<String, List<String>> vboFileSections = new HashMap<>();
-
-            readAllSections(vboReader, null, vboFileSections);
-
-            return vboFileSections;
-        }
-    }
-
-    /**
-     * Converts the vbo format of time (UTC time since midnight in the form HH:MM:SS.SS) to milliseconds.
-     *
-     * @param time the time in the format used by the vbo files
-     * @return the equivalent time in milliseconds
-     */
-    private static long convertToMillis(String time) {
-        // Time: This is UTC time since midnight in the form HH:MM:SS.SS,
-        if (time.length() != 9) {
-            throw new IllegalArgumentException(String.format("Unexpected VBO time value %s", time));
-        }
-        final long hh = Long.valueOf(time.substring(0, 2));
-        final long mm = Long.valueOf(time.substring(2, 4));
-        final long ss = Long.valueOf(time.substring(4, 6));
-        final long millis = Long.valueOf(time.substring(7, 9)) * 10;
-        return millis + ss * 1000 + mm * 60 * 1000 + hh * 60 * 60 * 1000;
-    }
-
-    private static void writeSection(Map<String, List<String>> vboSections, BufferedWriter writer, String sectionName)
-            throws IOException {
-        if (vboSections.containsKey(sectionName)) {
-            writer.write(sectionName);
-            writer.newLine();
-            for (String sectionEntry : vboSections.get(sectionName)) {
-                writer.write(sectionEntry);
-                writer.newLine();
-            }
-            writer.newLine();
-        }
-    }
-
-    private static String getDataSeparator(Map<String, List<String>> vboSections) {
-        String dataLine = vboSections.get(DATA_SECTION).get(0);
-        for (String separator : DATA_SEPARATORS) {
-            if (dataLine.split(separator).length > 0) {
-                return separator;
-            }
-        }
-        return null;
-    }
-
-    private static void readAllSections(BufferedReader vboReader, String sectionName,
-            Map<String, List<String>> vboFileSections) throws IOException {
-        String vboLine;
-        final List<String> sectionData = new ArrayList<>();
-        while ((vboLine = vboReader.readLine()) != null) {
-            if (vboLine.startsWith("[")) {
-                readAllSections(vboReader, vboLine, vboFileSections);
-            } else if (!Strings.isNullOrEmpty(sectionName) && !Strings.isNullOrEmpty(vboLine)) {
-                sectionData.add(vboLine);
-            }
-        }
-        if (!Strings.isNullOrEmpty(sectionName)) {
-            vboFileSections.put(sectionName, sectionData);
         }
     }
 

@@ -1,29 +1,29 @@
-package org.sikrip.vboeditor;
+package org.sikrip.vboeditor.engine;
 
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.assertEquals;
+import org.junit.Test;
+import org.sikrip.vboeditor.engine.VboEditor;
+import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.sikrip.vboeditor.model.TraveledRouteCoordinate;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.TestCase.assertEquals;
+import static org.sikrip.vboeditor.TestHelper.getTestResourceUrl;
+import static org.sikrip.vboeditor.engine.VboEditor.getTraveledRoute;
+import static org.sikrip.vboeditor.engine.VboIOUtils.readVboSections;
 
+/**
+ * Tests for {@link VboEditor}.
+ */
 public class VboEditorTest {
 
     @Test
-    public void verifyDataIntervalIdentification() throws IOException {
-        assertEquals(100, VboEditor.getGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample-vbo-from-dbn.vbo").getPath()), " "));
-        assertEquals(200, VboEditor.getGpsDataInterval(VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath()), " "));
-    }
-
-    @Test
     public void verifyTraveledRouteExtraction() throws IOException, ParseException {
-        List<TraveledRouteCoordinate> route = VboEditor.getTraveledRoute(getTestResourceUrl("/sample-vbo-for-route-test.vbo").getPath());
+        List<TraveledRouteCoordinate> route = getTraveledRoute(getTestResourceUrl("/sample-vbo-for-route-test.vbo").getPath());
 
         assertEquals(21, route.size());
         assertEquals(100, route.get(0).getGpsDataInterval());
@@ -52,7 +52,7 @@ public class VboEditorTest {
 
         VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sampleHarrysLapTimer.vbo", VboEditor.VideoType.MP4, "my-session", 0);
 
-        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+        Map<String, List<String>> vboWithVideoSections = readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
         assertTrue(vboWithVideoSections.containsKey("[session data]"));
         assertTrue(vboWithVideoSections.containsKey("[laptiming]"));
@@ -65,7 +65,7 @@ public class VboEditorTest {
 
         VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", -2020);
 
-        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+        Map<String, List<String>> vboWithVideoSections = readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
         List<String> headers = vboWithVideoSections.get("[header]");
         assertTrue(headers.contains("avifileindex"));
@@ -108,7 +108,7 @@ public class VboEditorTest {
 
         VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", -20);
 
-        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+        Map<String, List<String>> vboWithVideoSections = readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
         List<String> headers = vboWithVideoSections.get("[header]");
         assertTrue(headers.contains("avifileindex"));
@@ -145,7 +145,7 @@ public class VboEditorTest {
 
         VboEditor.createVboWithVideoMetadata(basePath, basePath + "/sample-vbo-from-dbn.vbo", VboEditor.VideoType.MP4, "my-session", 2000);
 
-        Map<String, List<String>> vboWithVideoSections = VboEditor.readVboSections(basePath + "/my-session/my-sessionData.vbo");
+        Map<String, List<String>> vboWithVideoSections = readVboSections(basePath + "/my-session/my-sessionData.vbo");
 
         List<String> headers = vboWithVideoSections.get("[header]");
         assertTrue(headers.contains("avifileindex"));
@@ -167,24 +167,5 @@ public class VboEditorTest {
         assertTrue(data.get(0).contains("00002000"));
         assertTrue(data.get(1).contains("0001"));
         assertTrue(data.get(1).contains("00002100"));
-    }
-
-    @Test
-    public void verifyVboHeadersReading() throws IOException {
-        Map<String, List<String>> vboSections = VboEditor.readVboSections(getTestResourceUrl("/sample.vbo").getPath());
-
-        assertEquals(6, vboSections.size());
-
-        assertEquals(7, vboSections.get("[header]").size());
-        assertEquals(1, vboSections.get("[column names]").size());
-        assertEquals(4420, vboSections.get("[data]").size());
-    }
-
-    public static URL getTestResourceUrl(String filename) {
-        URL resource = VboEditorTest.class.getResource(filename);
-        if (resource == null) {
-            throw new RuntimeException("Cannot find resource:" + filename);
-        }
-        return resource;
     }
 }
