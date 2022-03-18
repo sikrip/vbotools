@@ -1,5 +1,10 @@
 # vbotools
 
-A utility app that helps you integrate your video and vbo telemetry files so that you can perform telemetry analysis with video.
+A utility app for vbo telemetry files.
 
-Check it here: http://www.vbotools.com/
+* helps you integrate your video and vbo telemetry files so that you can perform telemetry analysis with video.
+* convert vbo <-> dbn files
+
+
+
+Find more here: http://www.vbotools.com/

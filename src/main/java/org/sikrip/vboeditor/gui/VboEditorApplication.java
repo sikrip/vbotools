@@ -29,6 +29,7 @@ final class VboEditorApplication extends JFrame implements ActionListener {
     private final JDialog waitDialog;
 
     private final SynchronizationPanel synchronizationPanel;
+    private final FileConverterPanel fileConverterPanel;
 
     private final JTextField outputDirPath = new JTextField();
     private final JButton outputDirChoose = new JButton("...");
@@ -40,24 +41,37 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
     private VboEditorApplication() throws HeadlessException {
         this.synchronizationPanel = new SynchronizationPanel(this);
+        this.fileConverterPanel = new FileConverterPanel(this);
         waitDialog = new JDialog(this, true);
     }
 
     private void createGui() {
 
         waitDialog.getContentPane().add(new JLabel("<html><h2>Working, please wait...</h2></html>"));
+        waitDialog.setUndecorated(true);
+        waitDialog.pack();
+        waitDialog.setLocationRelativeTo(this);
 
         telemetryVideoIntegrationPanel.setPreferredSize(new Dimension(840, 460));
         telemetryVideoIntegrationPanel.add(synchronizationPanel, BorderLayout.CENTER);
         telemetryVideoIntegrationPanel.add(createSouthPanel(), BorderLayout.SOUTH);
 
-        tabs.add("Telemetry/video integration", telemetryVideoIntegrationPanel);
+        tabs.add("Telemetry / video integration", telemetryVideoIntegrationPanel);
+        tabs.add("File conversion", fileConverterPanel);
         tabs.add("About", createAboutPanel());
 
         setTitle(APP_TITLE + " (" + VERSION_TAG + ")");
         getContentPane().add(tabs);
 
         enableDataLock(false);
+    }
+
+    void showWaitDlg() {
+        waitDialog.setVisible(true);
+    }
+
+    void hideWaitDlg() {
+        waitDialog.dispose();
     }
 
     private JPanel createSouthPanel() {
@@ -167,9 +181,6 @@ final class VboEditorApplication extends JFrame implements ActionListener {
             final long gpsDataTotalOffsetMillis = synchronizationPanel.getTelemetryDataOffset();
 
             final Component messageDialogParent = this;
-            waitDialog.setUndecorated(true);
-            waitDialog.pack();
-            waitDialog.setLocationRelativeTo(this);
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {
@@ -190,11 +201,11 @@ final class VboEditorApplication extends JFrame implements ActionListener {
 
                 @Override
                 protected void done() {
-                    waitDialog.dispose();
+                    hideWaitDlg();
                 }
             };
             worker.execute();
-            waitDialog.setVisible(true);
+            showWaitDlg();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "An error occurred", JOptionPane.ERROR_MESSAGE);
         }
@@ -235,11 +246,11 @@ final class VboEditorApplication extends JFrame implements ActionListener {
                 "<h2>Version " + VERSION_TAG + "</h2>" +
                 "A toolset for the .vbo telemetry format including:" +
                 "<ul>" +
-                "<li>A tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</li>"
-                +
-                "<li>More to come!</li>" +
+                "<li>A tool that can help you sync and integrate Telemetry and Video data so you can do video analysis on Circuit Tools.</li>" +
+                "<li>A tool to convert between .vbo and .dbn files.</li>" +
+                "<li>Maybe more to come!</li>" +
                 "</ul>" +
-                "<p>Author George Sikalias (sikrip)</p>" +
+                "<p>Author: George Sikalias (sikrip)</p>" +
                 "<p>Contact Info: " +
                 "sikrip@gmail.com, " +
                 "facebook.com/sikrip, " +
