@@ -22,8 +22,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
 
@@ -53,6 +53,18 @@
     </build>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>18</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>18</version>
+        </dependency>
 
         <dependency>
             <groupId>commons-io</groupId>
