@@ -139,6 +139,7 @@ final class TelemetryPlayer extends JPanel implements ActionListener, ChangeList
                 VboEditorApplication.setBrowsePath(selectedFile.getParent());
             }
         } catch (Exception e) {
+            e.printStackTrace();
             ErrorHandler.showError("Could not load telemetry", "Invalid .vbo file", e);
             filePath.setText("");
         }
