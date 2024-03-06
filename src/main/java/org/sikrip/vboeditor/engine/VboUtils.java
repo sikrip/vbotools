@@ -38,13 +38,19 @@ final class VboUtils {
      */
     static long convertToMillis(String time) {
         // Time: This is UTC time since midnight in the form HH:MM:SS.SS,
-        if (time.length() != 9) {
+        if (time.length() != 9 && time.length() != 10) {
             throw new IllegalArgumentException(String.format("Unexpected VBO time value %s", time));
         }
-        final long hh = Long.valueOf(time.substring(0, 2));
-        final long mm = Long.valueOf(time.substring(2, 4));
-        final long ss = Long.valueOf(time.substring(4, 6));
-        final long millis = Long.valueOf(time.substring(7, 9)) * 10;
+        final long hh = Long.parseLong(time.substring(0, 2));
+        final long mm = Long.parseLong(time.substring(2, 4));
+        final long ss = Long.parseLong(time.substring(4, 6));
+        // skip the decimal separator
+        final long millis;
+        if (time.length()== 9) {
+            millis = Long.parseLong(time.substring(7, 9)) * 10;
+        } else {
+            millis = Long.parseLong(time.substring(7, 10));
+        }
         return millis + ss * 1000 + mm * 60 * 1000 + hh * 60 * 60 * 1000;
     }
 
