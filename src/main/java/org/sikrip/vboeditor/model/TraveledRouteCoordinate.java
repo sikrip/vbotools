@@ -1,6 +1,9 @@
 package org.sikrip.vboeditor.model;
 
 
+/**
+ * Represents a GNSS data point.
+ */
 public class TraveledRouteCoordinate {
 
     private final double latitude;

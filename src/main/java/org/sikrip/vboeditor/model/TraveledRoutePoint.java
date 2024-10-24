@@ -1,6 +1,9 @@
 package org.sikrip.vboeditor.model;
 
 
+/**
+ * It is a representation of the traveled route in the GUI.
+ */
 public class TraveledRoutePoint {
 
     private final int x;
